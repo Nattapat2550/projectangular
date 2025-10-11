@@ -1,4 +1,6 @@
-<div class="container my-10">
-<h2>Home</h2>
-<p class="text-muted">หน้า Home สำหรับผู้ใช้ที่ล็อกอินแล้ว</p>
+
+<div class="card">
+  <h1>Home</h1>
+  <p *ngIf="auth.user()">Hello {{auth.user()?.name || auth.user()?.email}} (role: {{auth.user()?.role || 'user'}})</p>
+  <p *ngIf="!auth.user()">Please login.</p>
 </div>

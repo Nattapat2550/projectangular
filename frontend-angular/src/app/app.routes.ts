@@ -1,19 +1,30 @@
+
 import { Routes } from '@angular/router';
-import { AuthGuard } from './core/guards/auth.guard';
-import { RoleGuard } from './core/guards/role.guard';
+import { IndexComponent } from './pages/index/index.component';
+import { HomeComponent } from './pages/home/home.component';
+import { AboutComponent } from './pages/about/about.component';
+import { ContactComponent } from './pages/contact/contact.component';
+import { LoginComponent } from './pages/login/login.component';
+import { RegisterComponent } from './pages/register/register.component';
+import { SettingsComponent } from './pages/settings/settings.component';
+import { ResetComponent } from './pages/reset/reset.component';
+import { FormComponent } from './pages/form/form.component';
+import { CheckComponent } from './pages/check/check.component';
+import { AdminComponent } from './pages/admin/admin.component';
+import { authGuard } from './core/guards/auth.guard';
+import { roleGuard } from './core/guards/role.guard';
 
-
-export const routes: Routes = [
-{ path: '', loadComponent: () => import('./pages/index/index.component').then(m => m.IndexComponent) },
-{ path: 'home', loadComponent: () => import('./pages/home/home.component').then(m => m.HomeComponent), canActivate: [AuthGuard] },
-{ path: 'about', loadComponent: () => import('./pages/about/about.component').then(m => m.AboutComponent) },
-{ path: 'contact', loadComponent: () => import('./pages/contact/contact.component').then(m => m.ContactComponent) },
-{ path: 'login', loadComponent: () => import('./pages/login/login.component').then(m => m.LoginComponent) },
-{ path: 'register', loadComponent: () => import('./pages/register/register.component').then(m => m.RegisterComponent) },
-{ path: 'settings', loadComponent: () => import('./pages/settings/settings.component').then(m => m.SettingsComponent), canActivate: [AuthGuard] },
-{ path: 'reset', loadComponent: () => import('./pages/reset/reset.component').then(m => m.ResetComponent) },
-{ path: 'form', loadComponent: () => import('./pages/form/form.component').then(m => m.FormComponent) },
-{ path: 'check', loadComponent: () => import('./pages/check/check.component').then(m => m.CheckComponent) },
-{ path: 'admin', loadComponent: () => import('./pages/admin/admin.component').then(m => m.AdminComponent), canActivate: [AuthGuard, RoleGuard] },
-{ path: '**', redirectTo: '' }
+export const APP_ROUTES: Routes = [
+  { path: '', component: IndexComponent },
+  { path: 'home', component: HomeComponent, canActivate: [authGuard] },
+  { path: 'about', component: AboutComponent },
+  { path: 'contact', component: ContactComponent },
+  { path: 'login', component: LoginComponent },
+  { path: 'register', component: RegisterComponent },
+  { path: 'settings', component: SettingsComponent, canActivate: [authGuard] },
+  { path: 'reset', component: ResetComponent },
+  { path: 'form', component: FormComponent, canActivate: [roleGuard], data: { allow: ['admin'] } },
+  { path: 'check', component: CheckComponent, canActivate: [authGuard] },
+  { path: 'admin', component: AdminComponent, canActivate: [roleGuard], data: { allow: ['admin'] } },
+  { path: '**', redirectTo: '' }
 ];

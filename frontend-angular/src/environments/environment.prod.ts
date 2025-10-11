@@ -1,5 +1,7 @@
+
 export const environment = {
-production: true,
-apiBase: 'https://projectangular1.onrender.com',
-frontendUrl: 'https://projectangular-8bmo.onrender.com'
+  production: true,
+  apiBaseUrl: 'https://projectangular1.onrender.com',
+  frontendUrl: 'https://projectangular-8bmo.onrender.com',
+  googleClientId: '125409843795-uh1ta7mahhaqgjc7mpq36egqro6vsfnc.apps.googleusercontent.com'
 };

@@ -1,24 +1,19 @@
-import { Component } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
-import { AuthService } from '../../core/services/auth.service';
-import { environment } from '../../../environments/environment';
 
+import { Component, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { AuthService } from '../../core/services/auth.service';
 
 @Component({
-standalone: true,
-selector: 'app-login',
-imports: [FormsModule],
-templateUrl: './login.component.html',
-styleUrls: ['./login.component.css']
+  selector: 'app-login',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  templateUrl: './login.component.html'
 })
 export class LoginComponent {
-email = ''; password = '';
-constructor(private auth: AuthService, private router: Router) {}
-submit() {
-this.auth.login({ email: this.email, password: this.password }).subscribe({
-next: () => this.router.navigateByUrl('home')
-});
-}
-google() { window.location.href = `${environment.apiBase}/api/auth/google`; }
+  private auth = inject(AuthService);
+  email = '';
+  password = '';
+  login(){ this.auth.loginWithCredentials(this.email, this.password); }
+  google(){ this.auth.googleLoginRedirect(); }
 }

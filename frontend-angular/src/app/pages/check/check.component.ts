@@ -1,9 +1,11 @@
-import { Component } from '@angular/core';
 
+import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
 
 @Component({
-standalone: true,
-selector: 'app-check',
-templateUrl: './check.component.html'
+  selector: 'app-check',
+  standalone: true,
+  imports: [CommonModule],
+  templateUrl: './check.component.html'
 })
 export class CheckComponent {}

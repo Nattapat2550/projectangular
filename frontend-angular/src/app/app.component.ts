@@ -1,26 +1,31 @@
-// src/app/app.component.ts
-import { Component } from '@angular/core';
+
+import { Component, inject } from '@angular/core';
 import { RouterLink, RouterOutlet } from '@angular/router';
+import { AuthService } from './core/services/auth.service';
 
 @Component({
-  standalone: true,
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink],
+  standalone: true,
+  imports: [RouterLink, RouterOutlet],
   template: `
-  <header class="container flex items-center justify-between py-6">
-    <a routerLink="/" class="link"><strong>Project</strong></a>
-    <nav class="flex items-center gap-6">
-      <a routerLink="/about" class="link">About</a>
-      <a routerLink="/contact" class="link">Contact</a>
-      <a routerLink="/login" class="btn btn-outline">Login</a>
+    <nav class="container">
+      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}">Index</a>
+      <a routerLink="/home" routerLinkActive="active">Home</a>
+      <a routerLink="/about" routerLinkActive="active">About</a>
+      <a routerLink="/contact" routerLinkActive="active">Contact</a>
+      <a routerLink="/form" routerLinkActive="active">Form</a>
+      <a routerLink="/check" routerLinkActive="active">Check</a>
+      <a routerLink="/settings" routerLinkActive="active">Settings</a>
+      <a routerLink="/admin" routerLinkActive="active">Admin</a>
+      <span style="flex:1"></span>
+      <a routerLink="/login" routerLinkActive="active">Login</a>
+      <a routerLink="/register" routerLinkActive="active">Register</a>
+      <button (click)="logout()">Logout</button>
     </nav>
-  </header>
-  <main>
-    <router-outlet/>
-  </main>
-  <footer class="container py-6 text-muted">© {{ currentYear }}</footer>
+    <div class="container"><router-outlet/></div>
   `
 })
 export class AppComponent {
-  currentYear = new Date().getFullYear();
+  private auth = inject(AuthService);
+  logout(){ this.auth.logout(); }
 }
