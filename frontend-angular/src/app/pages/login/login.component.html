@@ -1,0 +1,22 @@
+<div class="container center" style="min-height: 70dvh;">
+<div class="card p-6 rounded" style="min-width: min(520px, 90vw);">
+<h2>Sign in</h2>
+<p class="text-muted">เข้าสู่ระบบเพื่อใช้งานฟีเจอร์ทั้งหมด</p>
+<form class="form mt-6" (ngSubmit)="submit()">
+<div class="row">
+<div>
+<label>Email</label>
+<input class="input" [(ngModel)]="email" name="email" required>
+</div>
+<div>
+<label>Password</label>
+<input class="input" type="password" [(ngModel)]="password" name="password" required>
+</div>
+</div>
+<div class="flex items-center justify-between mt-6">
+<button class="btn btn-primary" type="submit">Login</button>
+<button class="btn btn-outline" type="button" (click)="google()">Login with Google</button>
+</div>
+</form>
+</div>
+</div>

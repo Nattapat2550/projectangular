@@ -1,0 +1,23 @@
+<div class="container my-10">
+<h2>Password reset</h2>
+<div class="card p-6 rounded mt-6">
+<h3>Request reset link</h3>
+<form class="form" (ngSubmit)="request()">
+<label>Email</label>
+<input class="input" [(ngModel)]="email" name="email" required>
+<button class="btn btn-outline mt-6">Send link</button>
+</form>
+</div>
+
+
+<div class="card p-6 rounded mt-6">
+<h3>Set new password</h3>
+<form class="form" (ngSubmit)="submit()">
+<label>Token</label>
+<input class="input" [(ngModel)]="token" name="token" required>
+<label>New password</label>
+<input class="input" type="password" [(ngModel)]="password" name="password" required>
+<button class="btn btn-primary mt-6">Update password</button>
+</form>
+</div>
+</div>
