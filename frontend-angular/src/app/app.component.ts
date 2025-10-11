@@ -1,12 +1,11 @@
-
 import { Component, inject } from '@angular/core';
-import { RouterLink, RouterOutlet } from '@angular/router';
+import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router'; // <— เพิ่ม RouterLinkActive
 import { AuthService } from './core/services/auth.service';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterLink, RouterOutlet],
+  imports: [RouterLink, RouterLinkActive, RouterOutlet], // <— ใส่ RouterLinkActive ตรงนี้
   template: `
     <nav class="container">
       <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}">Index</a>
