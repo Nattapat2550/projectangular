@@ -1,11 +1,11 @@
-@font-face{
-font-family:"InterVar";
-src: local("Inter"),
-url("https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fv.ttf") format("truetype");
-font-display: swap;
+/* src/styles.css */
+:root {
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
-:root { font-family: InterVar, system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, sans-serif; }
 h1{ font-size: clamp(28px, 3vw, 40px); line-height:1.15; margin: 0 0 24px; }
 h2{ font-size: clamp(22px, 2.4vw, 30px); line-height:1.2; margin: 24px 0 16px; }
-code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; background: var(--surface); padding: 2px 6px; border-radius: 8px; }
+code, pre {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  background: var(--surface); padding: 2px 6px; border-radius: 8px;
+}
 a.link { color: var(--primary); }
