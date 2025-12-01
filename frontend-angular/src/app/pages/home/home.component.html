@@ -1,6 +1,0 @@
-
-<div class="card">
-  <h1>Home</h1>
-  <p *ngIf="auth.user()">Hello {{auth.user()?.name || auth.user()?.email}} (role: {{auth.user()?.role || 'user'}})</p>
-  <p *ngIf="!auth.user()">Please login.</p>
-</div>
