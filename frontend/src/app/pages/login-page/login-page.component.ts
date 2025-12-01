@@ -1,6 +1,5 @@
 import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-login-page',
@@ -8,30 +7,20 @@ import { Router } from '@angular/router';
   styleUrls: ['./login-page.component.css'],
 })
 export class LoginPageComponent {
-  form: FormGroup;
-  isSubmitting = false;
-  errorMessage = '';
+  loginForm: FormGroup;
 
-  constructor(private fb: FormBuilder, private router: Router) {
-    this.form = this.fb.group({
+  constructor(private fb: FormBuilder) {
+    this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required]],
+      password: ['', Validators.required],
     });
   }
 
   onSubmit(): void {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
+    if (this.loginForm.invalid) {
       return;
     }
-
-    this.isSubmitting = true;
-    this.errorMessage = '';
-
-    // TODO: เรียก auth service login จริง
-    setTimeout(() => {
-      this.isSubmitting = false;
-      this.router.navigate(['/home']);
-    }, 500);
+    // TODO: เรียก service login ของ backend ตรงนี้
+    console.log(this.loginForm.value);
   }
 }

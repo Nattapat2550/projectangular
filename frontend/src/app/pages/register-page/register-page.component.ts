@@ -1,6 +1,5 @@
 import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-register-page',
@@ -8,31 +7,21 @@ import { Router } from '@angular/router';
   styleUrls: ['./register-page.component.css'],
 })
 export class RegisterPageComponent {
-  form: FormGroup;
-  isSubmitting = false;
-  errorMessage = '';
+  registerForm: FormGroup;
 
-  constructor(private fb: FormBuilder, private router: Router) {
-    this.form = this.fb.group({
-      name: ['', [Validators.required]],
+  constructor(private fb: FormBuilder) {
+    this.registerForm = this.fb.group({
+      name: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required]],
+      password: ['', Validators.required],
     });
   }
 
   onSubmit(): void {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
+    if (this.registerForm.invalid) {
       return;
     }
-
-    this.isSubmitting = true;
-    this.errorMessage = '';
-
-    // TODO: เรียก auth service register จริง
-    setTimeout(() => {
-      this.isSubmitting = false;
-      this.router.navigate(['/auth/login']);
-    }, 500);
+    // TODO: เรียก service register ของ backend ตรงนี้
+    console.log(this.registerForm.value);
   }
 }
