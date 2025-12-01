@@ -1,39 +1,41 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
-import {
-  HttpClientModule,
-  HTTP_INTERCEPTORS,
-} from '@angular/common/http';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { RouterModule, Routes } from '@angular/router';
+import { HttpClientModule } from '@angular/common/http';
+import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 
-import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
+import { NavbarComponent } from './layout/navbar/navbar.component';
+import { LoginPageComponent } from './pages/login-page/login-page.component';
+import { RegisterPageComponent } from './pages/register-page/register-page.component';
+import { HomePageComponent } from './pages/home/home-page.component';
+import { AdminPageComponent } from './pages/admin/admin-page.component';
 
-import { AuthModule } from './auth/auth.module';
-import { LayoutModule } from './layout/layout.module';
-import { AuthInterceptor } from './core/interceptors/auth.interceptor';
+const routes: Routes = [
+  { path: '', redirectTo: 'login', pathMatch: 'full' },
+  { path: 'login', component: LoginPageComponent },
+  { path: 'register', component: RegisterPageComponent },
+  { path: 'home', component: HomePageComponent },
+  { path: 'admin', component: AdminPageComponent },
+];
 
 @NgModule({
-  declarations: [AppComponent],
+  declarations: [
+    AppComponent,
+    NavbarComponent,
+    LoginPageComponent,
+    RegisterPageComponent,
+    HomePageComponent,
+    AdminPageComponent,
+  ],
   imports: [
     BrowserModule,
     HttpClientModule,
-    BrowserAnimationsModule,
-
-    // feature modules
-    AuthModule,
-    LayoutModule,
-
-    // routing ต้องมาอันท้าย ๆ
-    AppRoutingModule,
+    FormsModule,
+    ReactiveFormsModule,
+    RouterModule.forRoot(routes),
   ],
-  providers: [
-    {
-      provide: HTTP_INTERCEPTORS,
-      useClass: AuthInterceptor,
-      multi: true,
-    },
-  ],
+  providers: [],
   bootstrap: [AppComponent],
 })
 export class AppModule {}

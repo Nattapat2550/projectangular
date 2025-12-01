@@ -1,5 +1,7 @@
 import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-login-page',
@@ -7,20 +9,36 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
   styleUrls: ['./login-page.component.css'],
 })
 export class LoginPageComponent {
-  loginForm: FormGroup;
+  form: FormGroup;
 
-  constructor(private fb: FormBuilder) {
-    this.loginForm = this.fb.group({
+  constructor(
+    private fb: FormBuilder,
+    private http: HttpClient,
+    private router: Router,
+  ) {
+    this.form = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
       password: ['', Validators.required],
     });
   }
 
-  onSubmit(): void {
-    if (this.loginForm.invalid) {
+  onSubmit() {
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
       return;
     }
-    // TODO: เรียก service login ของ backend ตรงนี้
-    console.log(this.loginForm.value);
+
+    const { email, password } = this.form.value;
+
+    // TODO: แก้ URL ให้ตรง backend ของเรา
+    this.http.post('/api/auth/login', { email, password }).subscribe({
+      next: () => this.router.navigate(['/home']),
+      error: (err) => console.error(err),
+    });
+  }
+
+  loginWithGoogle() {
+    // TODO: แก้ URL ให้ตรง backend ของเรา
+    window.location.href = '/api/auth/google';
   }
 }
