@@ -1,10 +1,13 @@
-import { Component } from '@angular/core';
+// frontend/src/app/app.module.ts
+import { NgModule } from '@angular/core';
+import { BrowserModule } from '@angular/platform-browser';
+import { AppRoutingModule } from './app-routing.module';
 
-@Component({
-  selector: 'app-root',
-  templateUrl: './app.component.html',
-  styleUrls: ['./app.component.css'],
+@NgModule({
+  imports: [
+    BrowserModule,
+    AppRoutingModule,
+  ],
+  providers: [],
 })
-export class AppComponent {
-  title = 'frontend';
-}
+export class AppModule {}

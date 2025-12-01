@@ -1,11 +1,8 @@
 // frontend/src/app/pages/home/home.module.ts
 import { NgModule } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { HomeRoutingModule } from './home-routing.module';
 import { HomePageComponent } from './home-page.component';
 
 @NgModule({
-  declarations: [HomePageComponent],
-  imports: [CommonModule, HomeRoutingModule],
+  imports: [HomePageComponent],
 })
 export class HomeModule {}
