@@ -46,7 +46,37 @@ export class AuthService {
     const accessToken = await this.signToken(user.id, user.email, user.role);
     return { accessToken };
   }
+  async loginWithGoogle(googleUser: any) {
+  // googleUser มาจาก GoogleStrategy (profile)
+  const email =
+    googleUser?.email ??
+    googleUser?.emails?.[0]?.value ??
+    null;
 
+  const name =
+    googleUser?.name ??
+    googleUser?.displayName ??
+    '';
+
+  const payload = {
+    sub: googleUser?.id ?? googleUser?.userId ?? null,
+    email,
+    name,
+  };
+
+  const accessToken = this.jwtService.sign(payload, {
+    expiresIn: '15m',
+  });
+
+  const refreshToken = this.jwtService.sign(payload, {
+    expiresIn: '7d',
+  });
+
+  return {
+    accessToken,
+    refreshToken,
+  };
+}
   async googleLogin(googleUser: {
     googleId: string;
     email?: string;
@@ -75,4 +105,5 @@ export class AuthService {
     const accessToken = await this.signToken(user.id, user.email, user.role);
     return { accessToken };
   }
+  
 }

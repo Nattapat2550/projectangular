@@ -1,13 +1,11 @@
-// src/users/users.controller.ts
-import { Controller, Get, UseGuards, Req } from '@nestjs/common';
-import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-import { Request } from 'express';
+// backend/src/users/users.controller.ts
+import { Controller, Get, Req } from '@nestjs/common';
 
-@Controller('api/users')
+@Controller('users')
 export class UsersController {
-  @UseGuards(JwtAuthGuard)
   @Get('me')
-  getMe(@Req() req: Request) {
-    return req.user;
+  getMe(@Req() req: any) {
+    // ตอนนี้ยังไม่ได้ผูก JWT Guard เลยอาจจะยังไม่มี req.user
+    return req.user ?? null;
   }
 }

@@ -1,4 +1,4 @@
-// src/auth/auth.controller.ts
+// backend/src/auth/auth.controller.ts
 import {
   Body,
   Controller,
@@ -8,48 +8,61 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import { AuthGuard } from '@nestjs/passport';
-import { ConfigService } from '@nestjs/config';
-import { Response, Request } from 'express';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { GoogleAuthGuard } from './guards/google-auth.guard';
 
-@Controller('api/auth')
+@Controller('auth')
 export class AuthController {
-  constructor(
-    private authService: AuthService,
-    private config: ConfigService,
-  ) {}
+  constructor(private readonly authService: AuthService) {}
 
   @Post('register')
-  register(@Body() dto: RegisterDto) {
+  async register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
   }
 
   @Post('login')
-  login(@Body() dto: LoginDto) {
+  async login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
   }
 
-  @Get('google')
-  @UseGuards(AuthGuard('google'))
-  async googleAuth() {
-    // Passport จะ redirect ให้เอง
+  @UseGuards(JwtAuthGuard)
+  @Get('me')
+  async me(@Req() req: Request) {
+    // JwtStrategy จะ set req.user ให้
+    return (req as any).user ?? null;
   }
 
-  @Get('google/callback')
-  @UseGuards(AuthGuard('google'))
-  async googleCallback(@Req() req: Request, @Res() res: Response) {
-    const googleUser = req.user as {
-      googleId: string;
-      email?: string;
-      name?: string;
-    };
+  // เริ่มต้น Google OAuth
+  @Get('google')
+  @UseGuards(GoogleAuthGuard)
+  async googleAuth() {
+    // GoogleAuthGuard จะ redirect ไปหน้า Google ให้เอง
+  }
 
-    const { accessToken } = await this.authService.googleLogin(googleUser);
-    const frontendUrl = this.config.get<string>('frontendUrl');
-    const redirectUrl = `${frontendUrl}/auth/callback?token=${accessToken}`;
-    return res.redirect(redirectUrl);
+  // Callback จาก Google หลัง login เสร็จ
+  @Get('google/callback')
+  @UseGuards(GoogleAuthGuard)
+  async googleCallback(@Req() req: Request, @Res() res: any) {
+    const frontendUrl = process.env.FRONTEND_URL ?? 'http://localhost:4200';
+
+    const { accessToken, refreshToken } =
+      await this.authService.loginWithGoogle((req as any).user);
+
+    // ใช้ any เลย จะไม่มี error เรื่อง cookie/redirect
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      sameSite: 'lax',
+    });
+
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      sameSite: 'lax',
+    });
+
+    return res.redirect(frontendUrl);
   }
 }

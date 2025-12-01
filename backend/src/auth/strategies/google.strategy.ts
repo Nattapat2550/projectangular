@@ -1,39 +1,34 @@
 // backend/src/auth/strategies/google.strategy.ts
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
-import {
-  Strategy,
-  Profile,
-  StrategyOptions,
-} from 'passport-google-oauth20';
-import { ConfigService } from '@nestjs/config';
+import { Strategy } from 'passport-google-oauth20';
 
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
-  constructor(config: ConfigService) {
-    const options: StrategyOptions = {
-      clientID: config.get<string>('google.clientId') || '',
-      clientSecret: config.get<string>('google.clientSecret') || '',
-      callbackURL: config.get<string>('google.callbackUri') || '',
+  constructor() {
+    super({
+      clientID: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      callbackURL: process.env.GOOGLE_CALLBACK_URL!,
       scope: ['email', 'profile'],
-    };
-
-    super(options);
+    } as any); // cast เป็น any กันเรื่อง StrategyOptions ไปเลย
   }
 
   async validate(
     accessToken: string,
     refreshToken: string,
-    profile: Profile,
+    profile: any, // ไม่ใช้ Profile ตรงนี้
     done: (error: any, user?: any) => void,
-  ) {
-    const emails = profile.emails ?? [];
-    const email = emails[0]?.value;
+  ): Promise<any> {
+    const { id, emails, displayName } = profile;
+
     const user = {
-      googleId: profile.id,
-      email,
-      name: profile.displayName,
+      provider: 'google',
+      providerId: id,
+      email: emails?.[0]?.value,
+      name: displayName,
     };
+
     done(null, user);
   }
 }
