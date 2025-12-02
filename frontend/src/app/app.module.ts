@@ -25,7 +25,7 @@ import { NavbarComponent } from './layout/navbar/navbar.component';
     ReactiveFormsModule,
     FormsModule,
     AppRoutingModule,
-    RouterModule, // ให้ใช้ router-outlet / routerLink ได้
+    RouterModule, // สำหรับ router-outlet / routerLink
   ],
   providers: [],
   bootstrap: [AppComponent],
