@@ -1,28 +1,23 @@
+// src/app/pages/login-page/login-page.component.ts
 import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
-import { Router } from '@angular/router';
+import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-login-page',
   templateUrl: './login-page.component.html',
-  styleUrls: ['./login-page.component.css'],
 })
 export class LoginPageComponent {
   form: FormGroup;
 
-  constructor(
-    private fb: FormBuilder,
-    private http: HttpClient,
-    private router: Router,
-  ) {
+  constructor(private fb: FormBuilder, private authService: AuthService) {
     this.form = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
       password: ['', Validators.required],
     });
   }
 
-  onSubmit() {
+  submit(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
@@ -30,15 +25,20 @@ export class LoginPageComponent {
 
     const { email, password } = this.form.value;
 
-    // TODO: แก้ URL ให้ตรง backend ของเรา
-    this.http.post('/api/auth/login', { email, password }).subscribe({
-      next: () => this.router.navigate(['/home']),
-      error: (err) => console.error(err),
+    this.authService.login(email, password).subscribe({
+      next: (res) => {
+        console.log('Login success', res);
+        // TODO: redirect หลังล็อกอินสำเร็จ เช่น:
+        // this.router.navigate(['/']);
+      },
+      error: (err: unknown) => {
+        console.error('Login error', err);
+      },
     });
   }
 
-  loginWithGoogle() {
-    // TODO: แก้ URL ให้ตรง backend ของเรา
-    window.location.href = '/api/auth/google';
+  loginWithGoogle(): void {
+    // ปรับ URL ให้ตรง backend ของคุณ
+    window.location.href = 'https://YOUR_BACKEND_URL/auth/google';
   }
 }

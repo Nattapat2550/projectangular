@@ -1,3 +1,4 @@
+// src/app/app.component.ts
 import { Component } from '@angular/core';
 
 @Component({
@@ -5,4 +6,6 @@ import { Component } from '@angular/core';
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css'],
 })
-export class AppComponent {}
+export class AppComponent {
+  // จะมี logic อะไรเพิ่มก็ค่อยใส่ทีหลังได้
+}
