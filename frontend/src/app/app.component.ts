@@ -7,5 +7,5 @@ import { Component } from '@angular/core';
   styleUrls: ['./app.component.css'],
 })
 export class AppComponent {
-  // จะมี logic อะไรเพิ่มก็ค่อยใส่ทีหลังได้
+  title = 'frontend';
 }

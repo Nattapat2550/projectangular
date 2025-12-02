@@ -1,9 +1,11 @@
 // src/app/app.module.ts
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
-import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
+import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+
+import { AppRoutingModule } from './app-routing.module';
 
 import { AppComponent } from './app.component';
 import { LoginPageComponent } from './pages/login-page/login-page.component';
@@ -19,15 +21,11 @@ import { NavbarComponent } from './layout/navbar/navbar.component';
   ],
   imports: [
     BrowserModule,
-    FormsModule,
-    ReactiveFormsModule,
     HttpClientModule,
-    RouterModule.forRoot([
-      { path: 'login', component: LoginPageComponent },
-      { path: 'register', component: RegisterPageComponent },
-      { path: '', redirectTo: 'login', pathMatch: 'full' },
-      { path: '**', redirectTo: 'login' },
-    ]),
+    ReactiveFormsModule,
+    FormsModule,
+    AppRoutingModule,
+    RouterModule, // ให้ใช้ router-outlet / routerLink ได้
   ],
   providers: [],
   bootstrap: [AppComponent],

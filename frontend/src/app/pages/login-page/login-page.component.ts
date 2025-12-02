@@ -6,39 +6,40 @@ import { AuthService } from '../../core/services/auth.service';
 @Component({
   selector: 'app-login-page',
   templateUrl: './login-page.component.html',
+  styleUrls: ['./login-page.component.css'],
 })
 export class LoginPageComponent {
   form: FormGroup;
 
-  constructor(private fb: FormBuilder, private authService: AuthService) {
+  constructor(
+    private fb: FormBuilder,
+    private authService: AuthService,
+  ) {
     this.form = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
-      password: ['', Validators.required],
+      password: ['', [Validators.required]],
     });
   }
 
-  submit(): void {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      return;
-    }
+  onSubmit(): void {
+    if (this.form.invalid) return;
 
     const { email, password } = this.form.value;
 
     this.authService.login(email, password).subscribe({
-      next: (res) => {
-        console.log('Login success', res);
-        // TODO: redirect หลังล็อกอินสำเร็จ เช่น:
-        // this.router.navigate(['/']);
+      next: () => {
+        console.log('Login success');
+        // TODO: redirect ไปหน้า home/admin ตามต้องการ
       },
-      error: (err: unknown) => {
+      error: (err) => {
         console.error('Login error', err);
+        alert('Login failed');
       },
     });
   }
 
   loginWithGoogle(): void {
-    // ปรับ URL ให้ตรง backend ของคุณ
-    window.location.href = 'https://YOUR_BACKEND_URL/auth/google';
+    // เปลี่ยน URL ให้เป็น backend ของคุณบน Render
+    window.location.href = 'https://projectangular1.onrender.com/auth/google';
   }
 }

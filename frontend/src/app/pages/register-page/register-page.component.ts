@@ -6,34 +6,36 @@ import { AuthService } from '../../core/services/auth.service';
 @Component({
   selector: 'app-register-page',
   templateUrl: './register-page.component.html',
+  styleUrls: ['./register-page.component.css'],
 })
 export class RegisterPageComponent {
   form: FormGroup;
 
-  constructor(private fb: FormBuilder, private authService: AuthService) {
+  constructor(
+    private fb: FormBuilder,
+    private authService: AuthService,
+  ) {
     this.form = this.fb.group({
-      name: ['', Validators.required],
+      name: ['', [Validators.required]],
       email: ['', [Validators.required, Validators.email]],
-      password: ['', Validators.required],
+      password: ['', [Validators.required, Validators.minLength(6)]],
     });
   }
 
-  submit(): void {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      return;
-    }
+  onSubmit(): void {
+    if (this.form.invalid) return;
 
     const { name, email, password } = this.form.value;
 
     this.authService.register(name, email, password).subscribe({
-      next: (res) => {
-        console.log('Register success', res);
-        // TODO: redirect เช่น ไปหน้า login
-        // this.router.navigate(['/login']);
+      next: () => {
+        console.log('Register success');
+        alert('Register success, please login');
+        // TODO: redirect ไปหน้า login
       },
-      error: (err: unknown) => {
+      error: (err) => {
         console.error('Register error', err);
+        alert('Register failed');
       },
     });
   }
