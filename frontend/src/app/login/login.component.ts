@@ -30,4 +30,8 @@ export class LoginComponent {
       this.msg = e.message || 'Login failed';
     }
   }
+
+  goGoogle() {
+    window.location.href = this.googleUrl;
+  }
 }

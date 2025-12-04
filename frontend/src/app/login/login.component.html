@@ -44,7 +44,15 @@
 </form>
 
 <div class="divider">or</div>
-<button class="btn outline" id="googleBtn" [attr.href]="googleUrl" (click)="location.href = googleUrl">
+<button
+  class="btn outline"
+  id="googleBtn"
+  type="button"
+  (click)="goGoogle()"
+>
+  Login with Google
+</button>
+
   Login with Google
 </button>
 
