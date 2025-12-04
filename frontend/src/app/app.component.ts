@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
 import { AuthService, Me } from './auth.service';
 
 @Component({
@@ -6,22 +7,20 @@ import { AuthService, Me } from './auth.service';
   templateUrl: './app.component.html',
 })
 export class AppComponent implements OnInit {
-  me: Me | null | undefined = undefined;
+  me: Me | null = null;
+  userMenuOpen = false;
 
-  constructor(private auth: AuthService) {}
+  constructor(private auth: AuthService, public router: Router) {}
 
   async ngOnInit() {
+    // theme เดิม
     const theme = localStorage.getItem('theme') || 'light';
     if (theme === 'dark') {
       document.body.classList.add('dark');
     }
-    this.me = await this.auth.loadStatus();
-  }
 
-  async logout() {
-    await this.auth.logout();
-    this.me = null;
-    location.href = '/index.html';
+    // โหลดสถานะ user เหมือนที่ guard ใช้
+    this.me = await this.auth.loadStatus();
   }
 
   toggleTheme() {
@@ -30,5 +29,24 @@ export class AppComponent implements OnInit {
       'theme',
       document.body.classList.contains('dark') ? 'dark' : 'light',
     );
+  }
+
+  toggleUserMenu() {
+    if (!this.me) return;
+    this.userMenuOpen = !this.userMenuOpen;
+  }
+
+  async logout(event?: Event) {
+    if (event) {
+      event.stopPropagation();
+      event.preventDefault();
+    }
+
+    await this.auth.logout();
+    this.me = null;
+    this.userMenuOpen = false;
+
+    // กลับหน้า index เหมือนเดิม
+    location.href = '/index.html';
   }
 }

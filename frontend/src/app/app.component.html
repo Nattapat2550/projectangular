@@ -1,89 +1,52 @@
-<header class="navbar-wrapper">
-  <nav class="navbar">
-    <!-- ซ้าย: โลโก้ / ชื่อเว็บ -->
-    <div class="navbar-left">
-      <a routerLink="/index.html" class="navbar-brand">
-        <span class="navbar-logo-circle">M</span>
-        <span class="navbar-title">MySite</span>
-      </a>
-    </div>
+<nav class="nav">
+  <div class="brand">MySite</div>
 
-    <!-- กลาง: เมนูหลัก -->
-    <div class="navbar-center">
-      <a
-        routerLink="/index.html"
-        routerLinkActive="active"
-        [routerLinkActiveOptions]="{ exact: true }"
-        class="navbar-link"
-        >Home</a
-      >
-      <a
-        routerLink="/about.html"
-        routerLinkActive="active"
-        class="navbar-link"
-        >About</a
-      >
-      <a
-        routerLink="/contact.html"
-        routerLinkActive="active"
-        class="navbar-link"
-        >Contact</a
-      >
-      <a
-        *ngIf="me"
-        routerLink="/download.html"
-        routerLinkActive="active"
-        class="navbar-link"
-        >Download</a
-      >
-      <a
-        *ngIf="me?.role === 'admin'"
-        routerLink="/admin.html"
-        routerLinkActive="active"
-        class="navbar-link"
-        >Admin</a
-      >
-    </div>
+  <div class="links">
+    <!-- เมนูหลักเหมือนดีไซน์เก่า -->
+    <a routerLink="/index.html">Home</a>
+    <a routerLink="/about.html">About</a>
+    <a routerLink="/contact.html">Contact</a>
+    <a *ngIf="me" routerLink="/download.html">Download</a>
 
-    <!-- ขวา: ปุ่ม Login/Register หรือ User Menu + toggle theme -->
-    <div class="navbar-right">
-      <!-- ยังไม่ล็อกอิน -->
-      <ng-container *ngIf="!me; else loggedInBlock">
-        <a routerLink="/login.html" class="btn btn-ghost">Login</a>
-        <a routerLink="/register.html" class="btn btn-solid">Register</a>
-      </ng-container>
+    <!-- ปุ่มเปลี่ยนธีม -->
+    <button id="themeToggle" (click)="toggleTheme()">🌓</button>
 
-      <!-- ล็อกอินแล้ว -->
-      <ng-template #loggedInBlock>
-        <div class="user-chip">
-          <img
-            class="user-avatar"
-            [src]="me?.profile_picture_url || 'assets/images/user.png'"
-            alt="Avatar"
-          />
-          <div class="user-info">
-            <div class="user-name">
-              {{ me?.username || me?.email }}
-            </div>
-            <button class="user-logout" (click)="logout()">Logout</button>
-          </div>
+    <!-- ถ้าล็อกอินแล้ว: แสดง user menu แบบเดิม -->
+    <ng-container *ngIf="me; else guestLinks">
+      <div
+        id="userMenu"
+        class="user-menu"
+        [class.open]="userMenuOpen"
+        (click)="toggleUserMenu()"
+      >
+        <img
+          id="avatar"
+          [src]="me?.profile_picture_url || 'assets/images/user.png'"
+          alt="avatar"
+        />
+        <span id="uname">{{ me?.username || me?.email }}</span>
+
+        <div class="dropdown">
+          <a routerLink="/settings.html">Settings</a>
+          <button
+            id="logoutBtn"
+            class="linklike"
+            (click)="logout($event)"
+          >
+            Logout
+          </button>
         </div>
-      </ng-template>
+      </div>
+    </ng-container>
 
-      <!-- ปุ่มเปลี่ยนธีม -->
-      <button
-        id="themeToggle"
-        class="icon-button"
-        type="button"
-        (click)="toggleTheme()"
-        aria-label="Toggle theme"
-      >
-        🌓
-      </button>
-    </div>
-  </nav>
-</header>
+    <!-- ยังไม่ล็อกอิน: แสดง Login / Register -->
+    <ng-template #guestLinks>
+      <a routerLink="/login.html">Login</a>
+      <a routerLink="/register.html">Register</a>
+    </ng-template>
+  </div>
+</nav>
 
-<main class="page-container">
+<main class="container">
   <router-outlet></router-outlet>
 </main>
