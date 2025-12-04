@@ -13,8 +13,7 @@
     "incremental": true,
     "strict": false,
     "skipLibCheck": true,
-    "moduleResolution": "node",
-    "types": ["node"]
+    "moduleResolution": "node"
   },
   "include": ["src/**/*"]
 }
