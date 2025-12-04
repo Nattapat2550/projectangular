@@ -1,42 +1,22 @@
-// backend/src/main.ts
+import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import compression from 'compression';
-import cookieParser from 'cookie-parser';
+import * as cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  const configService = app.get(ConfigService);
 
-  // รองรับทั้งกรณี default export / namespace export
-  const compressionFn: any = (compression as any).default || compression;
-  const cookieParserFn: any = (cookieParser as any).default || cookieParser;
-
-  app.use(compressionFn());
-
-  const sessionSecret =
-    configService.get<string>('SESSION_SECRET') || 'default_session_secret';
-
-  app.use(cookieParserFn(sessionSecret));
-
-  const frontendUrl =
-    configService.get<string>('FRONTEND_URL') || 'http://localhost:4200';
+  app.use(cookieParser());
 
   app.enableCors({
-    origin: frontendUrl,
-    credentials: true,
+    origin: true,           // ยอมทุก origin (ถ้าอยากล็อกทีหลัง ค่อยปรับ)
+    credentials: true
   });
 
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      transform: true,
-    }),
-  );
+  app.setGlobalPrefix('');  // ใช้ path ตาม controller ตรง ๆ เช่น /api/auth/login
 
-  const port = configService.get<number>('PORT') || 3000;
-  await app.listen(port);
+  const port = process.env.PORT || 5000;
+  await app.listen(port as number);
+  console.log(`NestJS backend running on port ${port}`);
 }
 bootstrap();

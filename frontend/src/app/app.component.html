@@ -1,3 +1,33 @@
-<!-- src/app/app.component.html -->
-<app-navbar></app-navbar>
-<router-outlet></router-outlet>
+<nav class="nav">
+  <div class="nav-left">
+    <a class="brand" routerLink="/index.html">MySite</a>
+  </div>
+
+  <div class="nav-right">
+    <a routerLink="/about.html">About</a>
+    <a routerLink="/contact.html">Contact</a>
+    <a routerLink="/download.html" *ngIf="me">Download</a>
+
+    <ng-container *ngIf="!me">
+      <a routerLink="/login.html">Login</a>
+      <a routerLink="/register.html">Register</a>
+    </ng-container>
+
+    <div class="user-menu" *ngIf="me">
+      <img
+        id="avatar"
+        [src]="me.profile_picture_url || 'images/user.png'"
+        alt="avatar"
+        class="avatar"
+      />
+      <span>{{ me.username || me.email }}</span>
+      <button id="logoutBtn" (click)="logout()">Logout</button>
+    </div>
+
+    <button id="themeToggle" (click)="toggleTheme()">🌓</button>
+  </div>
+</nav>
+
+<main class="container">
+  <router-outlet></router-outlet>
+</main>

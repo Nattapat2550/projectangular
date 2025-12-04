@@ -1,0 +1,7 @@
+<h1>Register</h1>
+<form (ngSubmit)="submit()" #f="ngForm">
+  <label>Email</label>
+  <input type="email" name="email" [(ngModel)]="email" required />
+  <button class="btn" type="submit" [disabled]="f.invalid">Send Code</button>
+</form>
+<p class="muted">{{ msg }}</p>

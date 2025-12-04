@@ -1,24 +1,41 @@
-// src/app.module.ts
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import configuration from './config/configuration';
-import { validationSchema } from './config/validation';
-import { PrismaModule } from './prisma/prisma.module';
-import { AuthModule } from './auth/auth.module';
-import { UsersModule } from './users/users.module';
-import { MailModule } from './mail/mail.module';
+import { DatabaseService } from './database.service';
+import { AuthService } from './auth.service';
+import { UsersService } from './users.service';
+import { HomepageService } from './homepage.service';
+import { CarouselService } from './carousel.service';
+import { AdminService } from './admin.service';
+
+import { AuthController } from './auth.controller';
+import { UsersController } from './users.controller';
+import { HomepageController } from './homepage.controller';
+import { CarouselController } from './carousel.controller';
+import { AdminController } from './admin.controller';
+import { DownloadController } from './download.controller';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
-      isGlobal: true,
-      load: [configuration],
-      validationSchema,
-    }),
-    PrismaModule,
-    UsersModule,
-    AuthModule,
-    MailModule,
+      isGlobal: true
+      // ใช้ .env เดิมใน root โปรเจคได้ (Render จะใส่ env ให้เอง)
+    })
   ],
+  controllers: [
+    AuthController,
+    UsersController,
+    HomepageController,
+    CarouselController,
+    AdminController,
+    DownloadController
+  ],
+  providers: [
+    DatabaseService,
+    AuthService,
+    UsersService,
+    HomepageService,
+    CarouselService,
+    AdminService
+  ]
 })
 export class AppModule {}

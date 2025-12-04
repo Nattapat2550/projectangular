@@ -1,9 +1,0 @@
-<form [formGroup]="form" (ngSubmit)="submit()">
-  <input type="email" formControlName="email" />
-  <input type="password" formControlName="password" />
-  <button type="submit" [disabled]="form.invalid">Login</button>
-</form>
-
-<button type="button" (click)="loginWithGoogle()">
-  Login with Google
-</button>
