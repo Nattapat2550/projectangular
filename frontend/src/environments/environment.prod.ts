@@ -1,4 +1,5 @@
 export const environment = {
   production: true,
-  apiBaseUrl: 'https://backendlogins.onrender.com', // URL backend NestJS บน Render
+  // URL ของ backend NestJS บน Render (ตัวที่ log ว่า NestFactory Starting...)
+  apiBaseUrl: 'https://projectangular1.onrender.com',
 };

@@ -293,3 +293,226 @@ button, .btn, .nav .links a, .brand, h1, h2, h3, h4, h5, th{ white-space:nowrap;
 @media (prefers-reduced-motion: reduce){
   *{ animation:none !important; transition:none !important; }
 }
+/* ===========================
+   NAVBAR LAYOUT & STYLES
+   =========================== */
+
+.navbar-wrapper {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 10px 24px;
+  background: rgba(15, 23, 42, 0.96); /* คล้าย dark navy */
+  color: #f9fafb;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.35);
+}
+
+/* ซ้าย: โลโก้ */
+
+.navbar-left {
+  display: flex;
+  align-items: center;
+}
+
+.navbar-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.navbar-logo-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: 2px solid #38bdf8;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.navbar-title {
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+/* กลาง: เมนู */
+
+.navbar-center {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+  justify-content: center;
+}
+
+.navbar-link {
+  position: relative;
+  font-size: 14px;
+  text-decoration: none;
+  color: #e5e7eb;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.navbar-link:hover {
+  background-color: rgba(148, 163, 184, 0.24);
+  color: #f9fafb;
+}
+
+.navbar-link.active {
+  color: #38bdf8;
+  background-color: rgba(56, 189, 248, 0.12);
+}
+
+/* ขวา: ปุ่ม + user */
+
+.navbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ปุ่ม generic */
+
+.btn {
+  border-radius: 999px;
+  padding: 6px 16px;
+  font-size: 13px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.btn-ghost {
+  background-color: transparent;
+  border-color: rgba(148, 163, 184, 0.6);
+  color: #e5e7eb;
+}
+
+.btn-ghost:hover {
+  background-color: rgba(148, 163, 184, 0.2);
+}
+
+.btn-solid {
+  background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+  color: #0b1120;
+  font-weight: 600;
+}
+
+.btn-solid:hover {
+  filter: brightness(1.05);
+}
+
+/* user chip */
+
+.user-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background-color: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(148, 163, 184, 0.6);
+}
+
+.user-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  object-fit: cover;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.user-name {
+  font-size: 12px;
+  max-width: 160px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-logout {
+  font-size: 11px;
+  border: none;
+  background: none;
+  color: #f97373;
+  cursor: pointer;
+  padding: 0;
+}
+
+.user-logout:hover {
+  text-decoration: underline;
+}
+
+/* icon button (theme toggle) */
+
+.icon-button {
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.6);
+  background-color: rgba(15, 23, 42, 0.9);
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #e5e7eb;
+  font-size: 16px;
+  padding: 0;
+}
+
+.icon-button:hover {
+  background-color: rgba(148, 163, 184, 0.25);
+}
+
+/* layout main page */
+
+.page-container {
+  max-width: 960px;
+  margin: 24px auto;
+  padding: 0 16px 40px;
+}
+
+/* responsive */
+
+@media (max-width: 768px) {
+  .navbar {
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+
+  .navbar-center {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .navbar-right {
+    order: 2;
+  }
+}
+

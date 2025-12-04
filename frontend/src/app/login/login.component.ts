@@ -13,6 +13,7 @@ export class LoginComponent {
   showPw = false;
   msg = '';
 
+  // URL สำหรับ Google Login -> backend /api/auth/google
   readonly googleUrl = `${environment.apiBaseUrl}/api/auth/google`;
 
   constructor(private auth: AuthService) {}
@@ -32,6 +33,7 @@ export class LoginComponent {
   }
 
   goGoogle() {
+    // เปลี่ยนหน้าไปที่ backend เพื่อเริ่ม OAuth Flow
     window.location.href = this.googleUrl;
   }
 }
