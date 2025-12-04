@@ -12,7 +12,9 @@
     "baseUrl": "./",
     "incremental": true,
     "strict": false,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "moduleResolution": "node",
+    "types": ["node"]
   },
   "include": ["src/**/*"]
 }
