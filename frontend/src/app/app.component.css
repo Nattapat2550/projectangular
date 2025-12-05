@@ -1,0 +1,5 @@
+/* Root app component – layout จริงอยู่ที่แต่ละหน้า & global styles.css */
+
+:host {
+  display: block;
+}
