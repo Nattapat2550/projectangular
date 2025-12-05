@@ -1,0 +1,59 @@
+<nav class="nav">
+  <div class="brand">MySite</div>
+  <div class="links">
+    <a routerLink="/home">Home</a>
+    <a routerLink="/about">About</a>
+    <a routerLink="/contact">Contact</a>
+    <a routerLink="/download">Download</a>
+    <button id="themeToggle" (click)="toggleTheme()">🌓</button>
+    <div id="userMenu" class="user-menu">
+      <img id="avatar" [src]="avatarUrl" alt="avatar" />
+      <span id="uname">{{ username }}</span>
+      <div class="dropdown">
+        <a routerLink="/settings">Settings</a>
+        <button id="logoutBtn" class="linklike" (click)="logout()">Logout</button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<main class="container">
+  <div class="carousel" *ngIf="currentItem">
+    <div class="carousel-track">
+      <div class="carousel-slide active">
+        <img [src]="currentItem.image_dataurl" alt="carousel image" />
+      </div>
+    </div>
+    <button
+      class="carousel-prev"
+      aria-label="รูปก่อนหน้า"
+      title="< รูปก่อนหน้า"
+      (click)="prev()"
+    >&lt;</button>
+    <button
+      class="carousel-next"
+      aria-label="รูปถัดไป"
+      title="> รูปถัดไป"
+      (click)="next()"
+    >&gt;</button>
+    <div class="carousel-indicators">
+      <button
+        *ngFor="let item of carouselItems; let i = index"
+        [class.active]="i === currentIndex"
+        (click)="selectIndex(i)"
+      ></button>
+    </div>
+  </div>
+
+  <div id="carousel-caption-box" class="card" *ngIf="currentItem">
+    <h3 id="cc-title">{{ currentItem.title }}</h3>
+    <h5 id="cc-subtitle" class="muted">{{ currentItem.subtitle }}</h5>
+    <p id="cc-desc">{{ currentItem.description }}</p>
+  </div>
+
+  <hr />
+  <h2 id="welcome_header">{{ welcomeHeader }}</h2>
+  <p id="main_paragraph">{{ mainParagraph }}</p>
+
+  <p class="muted" *ngIf="msg">{{ msg }}</p>
+</main>

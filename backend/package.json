@@ -1,39 +1,43 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "NestJS backend for login system",
+  "description": "NestJS backend for MySite",
   "main": "dist/main.js",
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
-    "start": "node dist/main.js",
-    "start:dev": "node dist/main.js",
+    "start": "nest start",
+    "start:dev": "nest start --watch",
+    "build": "nest build",
     "start:prod": "node dist/main.js"
   },
   "dependencies": {
-    "@nestjs/common": "^11.0.0",
-    "@nestjs/core": "^11.0.0",
-    "@nestjs/platform-express": "^11.0.0",
-    "@nestjs/config": "^4.0.0",
-    "pg": "^8.12.0",
+    "@nestjs/common": "^10.0.0",
+    "@nestjs/core": "^10.0.0",
+    "@nestjs/platform-express": "^10.0.0",
+    "@nestjs/config": "^3.0.0",
+    "pg": "^8.11.0",
     "bcryptjs": "^2.4.3",
-    "jsonwebtoken": "^9.0.2",
+    "jsonwebtoken": "^9.0.0",
     "cookie-parser": "^1.4.6",
-    "reflect-metadata": "^0.2.0",
-    "rxjs": "^7.8.1",
-    "nodemailer": "^6.9.14"
+    "cors": "^2.8.5",
+    "helmet": "^7.0.0",
+    "compression": "^1.7.4",
+    "express-rate-limit": "^7.0.0",
+    "googleapis": "^121.0.0",
+    "nodemailer": "^6.9.0",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.0",
+    "dotenv": "^16.4.0"
   },
   "devDependencies": {
-    "@nestjs/cli": "^11.0.0",
-    "@nestjs/schematics": "^11.0.0",
-    "@nestjs/testing": "^11.0.0",
-    "typescript": "^5.6.3",
-    "@types/node": "^22.10.2",
-    "@types/express": "^4.17.21",
-    "@types/bcryptjs": "^2.4.2",
-    "@types/jsonwebtoken": "^9.0.5",
-    "@types/cookie-parser": "^1.4.7"
-  },
-  "engines": {
-    "node": ">=18 <25"
+    "@nestjs/cli": "^10.0.0",
+    "@nestjs/schematics": "^10.0.0",
+    "@nestjs/testing": "^10.0.0",
+    "typescript": "^5.4.0",
+    "ts-node": "^10.9.1",
+    "@types/express": "^4.17.17",
+    "@types/node": "^20.11.0",
+    "@types/cookie-parser": "^1.4.3",
+    "@types/jsonwebtoken": "^9.0.2",
+    "@types/bcryptjs": "^2.4.2"
   }
 }

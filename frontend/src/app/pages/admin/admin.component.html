@@ -1,0 +1,160 @@
+<nav class="nav">
+  <div class="brand">MySite</div>
+  <div class="links">
+    <a routerLink="/home">Home</a>
+    <a routerLink="/about">About</a>
+    <a routerLink="/contact">Contact</a>
+    <a routerLink="/download">Download</a>
+    <a routerLink="/admin" class="active">Admin</a>
+    <button id="themeToggle" (click)="toggleTheme()">🌓</button>
+    <div id="userMenu" class="user-menu">
+      <img id="avatar" [src]="avatarUrl" alt="avatar" />
+      <span id="uname">{{ username }}</span>
+      <div class="dropdown">
+        <a routerLink="/settings">Settings</a>
+        <button id="logoutBtn" class="linklike" (click)="logout()">Logout</button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<main class="container">
+  <h2>Admin Panel</h2>
+  <p class="muted" *ngIf="msg">{{ msg }}</p>
+
+  <!-- Homepage sections -->
+  <section class="card">
+    <h3>Homepage Content</h3>
+
+    <label>Welcome Header</label>
+    <textarea
+      rows="2"
+      [(ngModel)]="sections['welcome_header']"
+      name="welcome_header"
+    ></textarea>
+    <button class="btn" (click)="saveSection('welcome_header')">
+      Save Header
+    </button>
+
+    <label>Main Paragraph</label>
+    <textarea
+      rows="4"
+      [(ngModel)]="sections['main_paragraph']"
+      name="main_paragraph"
+    ></textarea>
+    <button class="btn" (click)="saveSection('main_paragraph')">
+      Save Paragraph
+    </button>
+  </section>
+
+  <!-- Carousel management -->
+  <section class="card">
+    <h3>Carousel Items</h3>
+
+    <div class="card" *ngFor="let c of carouselItems">
+      <div class="row">
+        <div style="flex: 1">
+          <label>Index</label>
+          <input type="number" [(ngModel)]="c.editIndex" />
+        </div>
+        <div style="flex: 2">
+          <label>Title</label>
+          <input type="text" [(ngModel)]="c.editTitle" />
+          <label>Subtitle</label>
+          <input type="text" [(ngModel)]="c.editSubtitle" />
+        </div>
+      </div>
+      <label>Description</label>
+      <textarea rows="3" [(ngModel)]="c.editDescription"></textarea>
+
+      <div class="row" style="align-items: center">
+        <div style="flex: 1">
+          <label>Image (preview)</label>
+          <div *ngIf="c.image_dataurl">
+            <img [src]="c.image_dataurl" style="max-width: 200px; max-height: 120px" />
+          </div>
+          <input type="file" (change)="onEditImageSelected(c, $event)" />
+        </div>
+        <div style="flex: 1; text-align: right">
+          <button class="btn" (click)="saveCarouselItem(c)">Save</button>
+          <button class="btn outline" (click)="deleteCarouselItem(c)">
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <hr />
+    <h4>Add new item</h4>
+    <div class="row">
+      <div style="flex: 1">
+        <label>Index</label>
+        <input
+          type="number"
+          [(ngModel)]="newCarousel.item_index"
+          name="newCarouselIndex"
+        />
+      </div>
+      <div style="flex: 2">
+        <label>Title</label>
+        <input
+          type="text"
+          [(ngModel)]="newCarousel.title"
+          name="newCarouselTitle"
+        />
+        <label>Subtitle</label>
+        <input
+          type="text"
+          [(ngModel)]="newCarousel.subtitle"
+          name="newCarouselSubtitle"
+        />
+      </div>
+    </div>
+    <label>Description</label>
+    <textarea
+      rows="3"
+      [(ngModel)]="newCarousel.description"
+      name="newCarouselDescription"
+    ></textarea>
+
+    <label>Image</label>
+    <input type="file" (change)="onNewImageSelected($event)" />
+    <div *ngIf="newCarousel.image_dataurl">
+      <img
+        [src]="newCarousel.image_dataurl"
+        style="max-width: 200px; max-height: 120px"
+      />
+    </div>
+
+    <button class="btn" (click)="createCarouselItem()">Add Item</button>
+  </section>
+
+  <!-- Users -->
+  <section class="card">
+    <h3>Users</h3>
+    <div class="table">
+      <div class="row header">
+        <div>ID</div>
+        <div>Username</div>
+        <div>Email</div>
+        <div>Role</div>
+        <div>Verified</div>
+        <div>Action</div>
+      </div>
+      <div class="row" *ngFor="let u of users">
+        <div>{{ u.id }}</div>
+        <div>
+          <input type="text" [(ngModel)]="u.editUsername" />
+        </div>
+        <div>{{ u.email }}</div>
+        <div>
+          <input type="text" [(ngModel)]="u.editRole" />
+        </div>
+        <div>{{ u.is_email_verified ? 'Yes' : 'No' }}</div>
+        <div>
+          <button class="btn small" (click)="saveUser(u)">Save</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>

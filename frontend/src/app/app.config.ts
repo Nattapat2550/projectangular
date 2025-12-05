@@ -1,0 +1,12 @@
+import { ApplicationConfig } from '@angular/core';
+import { provideRouter } from '@angular/router';
+import { routes } from './app-routing.module';
+import { provideHttpClient } from '@angular/common/http';
+
+export const appConfig: ApplicationConfig = {
+  providers: [
+    provideRouter(routes),
+    // เอา withCredentials ออก ใช้แค่ตัวนี้พอ
+    provideHttpClient()
+  ]
+};

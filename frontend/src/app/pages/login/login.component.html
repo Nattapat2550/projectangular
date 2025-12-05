@@ -1,0 +1,45 @@
+<nav class="nav">
+  <div class="brand">MySite</div>
+  <div class="links">
+    <a routerLink="/">Index</a>
+    <a routerLink="/about">About</a>
+    <a routerLink="/contact">Contact</a>
+    <a routerLink="/download">Download</a>
+    <a routerLink="/register">Register</a>
+    <button id="themeToggle" (click)="toggleTheme()">🌓</button>
+  </div>
+</nav>
+
+<main class="container">
+  <h2>Login</h2>
+  <form (ngSubmit)="onSubmit()">
+    <label>Email</label>
+    <input type="email" [(ngModel)]="email" name="email" required />
+
+    <label>Password</label>
+    <input
+      [type]="showPw ? 'text' : 'password'"
+      [(ngModel)]="password"
+      name="password"
+      required
+    />
+
+    <div class="row" style="justify-content: space-between">
+      <label>
+        <input type="checkbox" [(ngModel)]="showPw" name="showPw" />
+        Show Password
+      </label>
+      <label>
+        <input type="checkbox" [(ngModel)]="remember" name="remember" />
+        Remember me
+      </label>
+    </div>
+
+    <button class="btn" type="submit">Login</button>
+    <a class="muted" routerLink="/reset">Forgot Password?</a>
+  </form>
+
+  <div class="divider">or</div>
+  <button class="btn outline" (click)="loginWithGoogle()">Login with Google</button>
+  <p id="msg" class="muted" *ngIf="msg">{{ msg }}</p>
+</main>

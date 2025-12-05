@@ -1,0 +1,22 @@
+<nav class="nav">
+  <div class="brand">MySite</div>
+  <div class="links">
+    <a routerLink="/">Index</a>
+    <a routerLink="/home">Home</a>
+    <a routerLink="/about" class="active">About</a>
+    <a routerLink="/contact">Contact</a>
+    <a routerLink="/download">Download</a>
+    <a routerLink="/login">Login</a>
+    <a routerLink="/register">Register</a>
+    <button id="themeToggle" (click)="toggleTheme()">🌓</button>
+  </div>
+</nav>
+
+<main class="container">
+  <h2>About</h2>
+  <p>
+    เว็บไซต์นี้เป็นตัวอย่างระบบ Login / Register / Google Login และหน้าจัดการ
+    Home / Carousel / Admin Panel ที่ย้ายมาทำใหม่ด้วย Angular + NestJS
+    โดยยังคง UX / UI เดิมให้ใกล้เคียงโปรเจคต้นฉบับมากที่สุด
+  </p>
+</main>

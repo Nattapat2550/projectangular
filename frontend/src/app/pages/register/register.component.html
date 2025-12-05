@@ -1,0 +1,25 @@
+<nav class="nav">
+  <div class="brand">MySite</div>
+  <div class="links">
+    <a routerLink="/">Index</a>
+    <a routerLink="/about">About</a>
+    <a routerLink="/contact">Contact</a>
+    <a routerLink="/download">Download</a>
+    <a routerLink="/login">Login</a>
+    <a routerLink="/register" class="active">Register</a>
+    <button id="themeToggle" (click)="toggleTheme()">🌓</button>
+  </div>
+</nav>
+
+<main class="container">
+  <h2>Register</h2>
+  <p>กรอกอีเมลเพื่อรับรหัสยืนยัน (6 หลัก)</p>
+  <form (ngSubmit)="onSubmit()">
+    <label>Email</label>
+    <input type="email" [(ngModel)]="email" name="email" required />
+    <button class="btn" type="submit" [disabled]="loading">
+      {{ loading ? 'Sending...' : 'Send Code' }}
+    </button>
+  </form>
+  <p class="muted" *ngIf="msg">{{ msg }}</p>
+</main>

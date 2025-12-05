@@ -1,0 +1,31 @@
+<nav class="nav">
+  <div class="brand">MySite</div>
+  <div class="links">
+    <a routerLink="/">Index</a>
+    <a routerLink="/about">About</a>
+    <a routerLink="/contact">Contact</a>
+    <a routerLink="/download">Download</a>
+    <a routerLink="/login">Login</a>
+    <a routerLink="/register">Register</a>
+    <button id="themeToggle" (click)="toggleTheme()">🌓</button>
+  </div>
+</nav>
+
+<main class="container">
+  <h2>Verify Email</h2>
+  <p>เราได้ส่งรหัสยืนยันไปที่: <strong>{{ email }}</strong></p>
+  <form (ngSubmit)="onSubmit()">
+    <label>Verification Code (6 digits)</label>
+    <input
+      type="text"
+      maxlength="6"
+      [(ngModel)]="code"
+      name="code"
+      required
+    />
+    <button class="btn" type="submit" [disabled]="loading">
+      {{ loading ? 'Verifying...' : 'Verify' }}
+    </button>
+  </form>
+  <p class="muted" *ngIf="msg">{{ msg }}</p>
+</main>

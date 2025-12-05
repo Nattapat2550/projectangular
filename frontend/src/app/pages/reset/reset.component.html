@@ -1,0 +1,51 @@
+<nav class="nav">
+  <div class="brand">MySite</div>
+  <div class="links">
+    <a routerLink="/">Index</a>
+    <a routerLink="/about">About</a>
+    <a routerLink="/contact">Contact</a>
+    <a routerLink="/download">Download</a>
+    <a routerLink="/login">Login</a>
+    <a routerLink="/register">Register</a>
+    <button id="themeToggle" (click)="toggleTheme()">🌓</button>
+  </div>
+</nav>
+
+<main class="container">
+  <h2 *ngIf="mode === 'request'">Forgot Password</h2>
+  <h2 *ngIf="mode === 'reset'">Reset Password</h2>
+
+  <form *ngIf="mode === 'request'" (ngSubmit)="sendResetLink()">
+    <p>กรอกอีเมลของคุณเพื่อขอ link reset password</p>
+    <label>Email</label>
+    <input type="email" [(ngModel)]="email" name="email" required />
+    <button class="btn" type="submit" [disabled]="loading">
+      {{ loading ? 'Sending...' : 'Send Reset Link' }}
+    </button>
+  </form>
+
+  <form *ngIf="mode === 'reset'" (ngSubmit)="resetPassword()">
+    <p>ตั้งรหัสผ่านใหม่</p>
+    <label>New Password</label>
+    <input
+      type="password"
+      [(ngModel)]="newPassword"
+      name="newPassword"
+      required
+    />
+
+    <label>Confirm Password</label>
+    <input
+      type="password"
+      [(ngModel)]="confirmPassword"
+      name="confirmPassword"
+      required
+    />
+
+    <button class="btn" type="submit" [disabled]="loading">
+      {{ loading ? 'Saving...' : 'Change Password' }}
+    </button>
+  </form>
+
+  <p class="muted" *ngIf="msg">{{ msg }}</p>
+</main>

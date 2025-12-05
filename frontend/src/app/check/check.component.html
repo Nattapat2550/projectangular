@@ -1,8 +1,0 @@
-<h1>Verify Email</h1>
-<p>We sent a verification code to <b>{{ email }}</b>.</p>
-<form (ngSubmit)="submit()" #f="ngForm">
-  <label>Verification Code</label>
-  <input type="text" name="code" [(ngModel)]="code" required />
-  <button class="btn" type="submit" [disabled]="f.invalid">Verify</button>
-</form>
-<p class="muted">{{ msg }}</p>

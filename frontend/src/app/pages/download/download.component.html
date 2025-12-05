@@ -1,0 +1,30 @@
+<nav class="nav">
+  <div class="brand">MySite</div>
+  <div class="links">
+    <a routerLink="/">Index</a>
+    <a routerLink="/home">Home</a>
+    <a routerLink="/about">About</a>
+    <a routerLink="/contact">Contact</a>
+    <a routerLink="/download" class="active">Download</a>
+    <a routerLink="/login">Login</a>
+    <a routerLink="/register">Register</a>
+    <button id="themeToggle" (click)="toggleTheme()">🌓</button>
+  </div>
+</nav>
+
+<main class="container">
+  <h2>Download</h2>
+  <p>เลือกดาวน์โหลดโปรแกรมได้ตามปุ่มด้านล่าง:</p>
+  <div class="actions">
+    <a
+      class="btn"
+      [href]="backendBaseUrl + '/api/download/windows'"
+      >Download for Windows</a
+    >
+    <a
+      class="btn outline"
+      [href]="backendBaseUrl + '/api/download/android'"
+      >Download for Android</a
+    >
+  </div>
+</main>

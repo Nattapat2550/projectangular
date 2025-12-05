@@ -1,44 +1,53 @@
-import { NgModule } from '@angular/core';
-import { RouterModule, Routes } from '@angular/router';
-import { LandingComponent } from './landing/landing.component';
-import { LoginComponent } from './login/login.component';
-import { RegisterComponent } from './register/register.component';
-import { CheckComponent } from './check/check.component';
-import { ProfileFormComponent } from './profile-form/profile-form.component';
-import { HomeComponent } from './home/home.component';
-import { SettingsComponent } from './settings/settings.component';
-import { DownloadComponent } from './download/download.component';
-import { AdminComponent } from './admin/admin.component';
-import { ResetComponent } from './reset/reset.component';
-import { AboutComponent } from './about/about.component';
-import { ContactComponent } from './contact/contact.component';
-import { AuthGuard } from './auth.guard';
-import { AdminGuard } from './admin.guard';
+import { Routes } from '@angular/router';
+import { IndexPageComponent } from './pages/index-page/index-page.component';
+import { LoginComponent } from './pages/login/login.component';
+import { HomeComponent } from './pages/home/home.component';
+import { AboutComponent } from './pages/about/about.component';
+import { ContactComponent } from './pages/contact/contact.component';
+import { DownloadComponent } from './pages/download/download.component';
+import { RegisterComponent } from './pages/register/register.component';
+import { CheckComponent } from './pages/check/check.component';
+import { FormComponent } from './pages/form/form.component';
+import { ResetComponent } from './pages/reset/reset.component';
+import { SettingsComponent } from './pages/settings/settings.component';
+import { AdminComponent } from './pages/admin/admin.component';
 
-const routes: Routes = [
-  { path: '', redirectTo: 'index.html', pathMatch: 'full' },
-  { path: 'index.html', component: LandingComponent },
+export const routes: Routes = [
+  { path: '', component: IndexPageComponent },
+  { path: 'index.html', redirectTo: '', pathMatch: 'full' },
 
-  { path: 'login.html', component: LoginComponent },
-  { path: 'register.html', component: RegisterComponent },
-  { path: 'check.html', component: CheckComponent },
-  { path: 'form.html', component: ProfileFormComponent },
-  { path: 'reset.html', component: ResetComponent },
+  { path: 'login', component: LoginComponent },
+  { path: 'login.html', redirectTo: 'login', pathMatch: 'full' },
 
-  { path: 'home.html', component: HomeComponent, canActivate: [AuthGuard] },
-  { path: 'settings.html', component: SettingsComponent, canActivate: [AuthGuard] },
-  { path: 'download.html', component: DownloadComponent, canActivate: [AuthGuard] },
+  { path: 'home', component: HomeComponent },
+  { path: 'home.html', redirectTo: 'home', pathMatch: 'full' },
 
-  { path: 'admin.html', component: AdminComponent, canActivate: [AdminGuard] },
+  { path: 'about', component: AboutComponent },
+  { path: 'about.html', redirectTo: 'about', pathMatch: 'full' },
 
-  { path: 'about.html', component: AboutComponent },
-  { path: 'contact.html', component: ContactComponent },
+  { path: 'contact', component: ContactComponent },
+  { path: 'contact.html', redirectTo: 'contact', pathMatch: 'full' },
 
-  { path: '**', redirectTo: 'index.html' },
+  { path: 'download', component: DownloadComponent },
+  { path: 'download.html', redirectTo: 'download', pathMatch: 'full' },
+
+  { path: 'register', component: RegisterComponent },
+  { path: 'register.html', redirectTo: 'register', pathMatch: 'full' },
+
+  { path: 'check', component: CheckComponent },
+  { path: 'check.html', redirectTo: 'check', pathMatch: 'full' },
+
+  { path: 'form', component: FormComponent },
+  { path: 'form.html', redirectTo: 'form', pathMatch: 'full' },
+
+  { path: 'reset', component: ResetComponent },
+  { path: 'reset.html', redirectTo: 'reset', pathMatch: 'full' },
+
+  { path: 'settings', component: SettingsComponent },
+  { path: 'settings.html', redirectTo: 'settings', pathMatch: 'full' },
+
+  { path: 'admin', component: AdminComponent },
+  { path: 'admin.html', redirectTo: 'admin', pathMatch: 'full' },
+
+  { path: '**', redirectTo: '' },
 ];
-
-@NgModule({
-  imports: [RouterModule.forRoot(routes, { scrollPositionRestoration: 'top' })],
-  exports: [RouterModule],
-})
-export class AppRoutingModule {}
