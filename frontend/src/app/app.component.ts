@@ -7,6 +7,9 @@ import { AuthService, Me } from './auth.service';
   templateUrl: './app.component.html',
 })
 export class AppComponent implements OnInit {
+  title(title: any) {
+    throw new Error('Method not implemented.');
+  }
   me: Me | null = null;
   userMenuOpen = false;
 
