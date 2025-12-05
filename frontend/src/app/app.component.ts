@@ -6,22 +6,25 @@ import { RouterOutlet } from '@angular/router';
   selector: 'app-root',
   standalone: true,
   imports: [RouterOutlet],
-  templateUrl: './app.component.html',
+  // ใช้ inline template แทน templateUrl
+  template: `
+    <router-outlet></router-outlet>
+  `,
   styleUrl: './app.component.css',
 })
 export class AppComponent implements AfterViewInit {
 
   ngAfterViewInit(): void {
-    // ให้รันเฉพาะใน browser (กันเผื่ออนาคตไปใช้ SSR)
+    // ป้องกันกรณีรันนอก browser (เผื่ออนาคตใช้ SSR)
     if (typeof document === 'undefined') return;
 
     const menu = document.getElementById('userMenu');
     if (!menu) {
-      // ถ้าหน้าไหนไม่มี userMenu ก็ไม่ต้องทำอะไร
+      // ถ้าหน้าไหนยังไม่มี userMenu ก็ยังไม่ต้องทำอะไร
       return;
     }
 
-    // logic เหมือน main.js เดิม
+    // logic dropdown แบบเดิม
     document.addEventListener('click', (event: MouseEvent) => {
       const target = event.target as Node | null;
       if (!target) return;
