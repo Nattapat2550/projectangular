@@ -6,7 +6,6 @@ import { RouterOutlet } from '@angular/router';
   selector: 'app-root',
   standalone: true,
   imports: [RouterOutlet],
-  // ใช้ inline template แทน templateUrl
   template: `
     <router-outlet></router-outlet>
   `,
@@ -15,24 +14,31 @@ import { RouterOutlet } from '@angular/router';
 export class AppComponent implements AfterViewInit {
 
   ngAfterViewInit(): void {
-    // ป้องกันกรณีรันนอก browser (เผื่ออนาคตใช้ SSR)
     if (typeof document === 'undefined') return;
 
-    const menu = document.getElementById('userMenu');
-    if (!menu) {
-      // ถ้าหน้าไหนยังไม่มี userMenu ก็ยังไม่ต้องทำอะไร
-      return;
-    }
+    // ❌ เวอร์ชันเก่า: หา menu ตอนนี้ ถ้าไม่เจอ = return เลย → ไม่ทำงาน  
+    // const menu = document.getElementById('userMenu');
+    // if (!menu) return;
 
-    // logic dropdown แบบเดิม
+    // ✅ เวอร์ชันใหม่: ผูก event ไว้ครั้งเดียว แล้วค่อยหา menu ตอนคลิกจริง
     document.addEventListener('click', (event: MouseEvent) => {
       const target = event.target as Node | null;
       if (!target) return;
 
+      // หา element ทุกครั้งที่คลิก เผื่อมันถูกสร้างทีหลัง
+      const menu =
+        (document.getElementById('userMenu') as HTMLElement | null) ||
+        (document.querySelector('.user-menu') as HTMLElement | null);
+
+      if (!menu) {
+        // ถ้ายังไม่มี userMenu บนหน้านี้ ก็ไม่ต้องทำอะไร
+        return;
+      }
+
       const inside = menu.contains(target);
 
       if (inside) {
-        // คลิกใน userMenu → toggle open
+        // คลิกในกล่อง userMenu → toggle open
         menu.classList.toggle('open');
       } else {
         // คลิกนอก → ปิดเมนู
