@@ -1,0 +1,66 @@
+/* app.component.css */
+
+/* พื้นหลังด้านบน + ขอบด้านล่าง */
+.top-nav-wrapper {
+  background-color: #f5f7fb;
+  border-bottom: 1px solid #e2e5f0;
+  padding: 8px 24px;
+}
+
+/* แถบเมนู */
+.top-nav {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* แต่ละแท็บ */
+.top-nav li {
+  display: inline-flex;
+}
+
+/* ลิงก์แท็บ */
+.top-nav a {
+  display: inline-block;
+  padding: 8px 18px;
+  border-radius: 10px;
+  text-decoration: none;
+  color: #111827;
+  font-size: 14px;
+}
+
+/* ปุ่ม logout ให้หน้าตาเหมือนแท็บ */
+.logout-btn {
+  padding: 8px 18px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background-color: #ffffff;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+/* active tab (แท็บที่ถูกเลือก) */
+.top-nav a.active {
+  background-color: #e4ebff;
+  font-weight: 600;
+}
+
+/* ขยับเมนูฝั่งขวา (Login / Register / Logout) */
+.top-nav li.right {
+  margin-left: auto;
+}
+
+/* กล่อง content ขาว ๆ แบบในรูป */
+.page-container {
+  padding: 24px;
+}
+
+.page-container > * {
+  background-color: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  padding: 16px 20px;
+}
