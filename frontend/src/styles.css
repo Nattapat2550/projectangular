@@ -139,10 +139,16 @@ body{
 .btn:hover{ transform: translateY(-1px) scale(1.01); filter: brightness(1.05); }
 .btn:active{ transform: translateY(0) scale(.99); filter: brightness(.98); }
 .btn.outline{
-  background: #fff; color: var(--acc-1); border:1px solid color-mix(in oklab, var(--acc-1) 50%, #fff);
+  background: #ffffff;
+  /* ทำให้ตัวอักษรเข้มขึ้นจาก var(--acc-1) นิดนึง */
+  color: color-mix(in oklab, var(--acc-1) 92%, #000);
+  border:1px solid color-mix(in oklab, var(--acc-1) 60%, #ffffff);
   box-shadow:none;
 }
-.btn.outline:hover{ background: color-mix(in oklab, var(--acc-1) 8%, #fff); }
+
+.btn.outline:hover{
+  background: color-mix(in oklab, var(--acc-1) 10%, #ffffff);
+}
 .btn.danger{
   background: linear-gradient(90deg, #FF5277, #FF784D);
   color:#fff; box-shadow: 0 0 20px rgba(255,82,119,.25);
