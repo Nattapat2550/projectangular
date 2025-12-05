@@ -1,19 +1,19 @@
 <!-- app.component.html -->
 <nav class="nav">
-  <div class="brand">MySite</div>
+  <div class="brand" routerLink="/">MySite</div>
 
   <div class="links">
-    <!-- เหมือน navbar เดิม: Home / About / Contact / Download -->
+    <!-- ใช้ path ตาม Angular เดิม: /home /about /contact /download -->
     <a
-      routerLink="/index.html"
+      routerLink="/home"
       routerLinkActive="active"
       [routerLinkActiveOptions]="{ exact: true }"
     >
       Home
     </a>
-    <a routerLink="/about.html" routerLinkActive="active">About</a>
-    <a routerLink="/contact.html" routerLinkActive="active">Contact</a>
-    <a routerLink="/download.html" routerLinkActive="active">Download</a>
+    <a routerLink="/about" routerLinkActive="active">About</a>
+    <a routerLink="/contact" routerLinkActive="active">Contact</a>
+    <a routerLink="/download" routerLinkActive="active">Download</a>
 
     <!-- ปุ่มสลับธีม 🌓 -->
     <button
@@ -25,7 +25,7 @@
       🌓
     </button>
 
-    <!-- ถ้า login แล้ว ให้แสดง user menu แบบ home.html เดิม -->
+    <!-- ถ้า login แล้ว: แสดง user menu เหมือน home.html เดิม -->
     <ng-container *ngIf="me as user">
       <div
         id="userMenu"
@@ -41,12 +41,12 @@
         <span id="uname">{{ user.username || user.email }}</span>
 
         <div class="dropdown">
-          <a routerLink="/settings.html" routerLinkActive="active">
+          <a routerLink="/settings" routerLinkActive="active">
             Settings
           </a>
           <a
             *ngIf="user.role === 'admin'"
-            routerLink="/admin.html"
+            routerLink="/admin"
             routerLinkActive="active"
           >
             Admin
@@ -65,7 +65,6 @@
   </div>
 </nav>
 
-<!-- main เหมือน <main class="container"> เดิม -->
 <main class="container">
   <router-outlet></router-outlet>
 </main>
