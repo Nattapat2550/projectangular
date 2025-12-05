@@ -1,5 +1,28 @@
-<h1>Download</h1>
-<ul>
-  <li><a [href]="windowsUrl">Download for Windows</a></li>
-  <li><a [href]="androidUrl">Download for Android</a></li>
-</ul>
+<h1>Download MyApp</h1>
+<p class="muted">เลือกแพลตฟอร์มที่ต้องการติดตั้งแอป</p>
+
+<div class="card-grid">
+  <section class="card">
+    <h2>Windows</h2>
+    <p>ไฟล์ติดตั้งเดสก์ท็อป <code>MyAppSetup.exe</code></p>
+    <a
+      id="downloadWindows"
+      class="btn primary"
+      [href]="windowsUrl"
+    >
+      Download for Windows
+    </a>
+  </section>
+
+  <section class="card">
+    <h2>Android</h2>
+    <p>ไฟล์ติดตั้งแอปมือถือ <code>app-release.apk</code></p>
+    <a
+      id="downloadAndroid"
+      class="btn"
+      [href]="androidUrl"
+    >
+      Download for Android
+    </a>
+  </section>
+</div>

@@ -1,50 +1,78 @@
 <!-- app.component.html -->
-<nav class="top-nav-wrapper">
-  <ul class="top-nav">
-    <li>
-      <a routerLink="/index.html"
-         routerLinkActive="active"
-         [routerLinkActiveOptions]="{ exact: true }">
-        Index
-      </a>
-    </li>
-    <li>
-      <a routerLink="/home.html" routerLinkActive="active">Home</a>
-    </li>
-    <li>
-      <a routerLink="/about.html" routerLinkActive="active">About</a>
-    </li>
-    <li>
-      <a routerLink="/contact.html" routerLinkActive="active">Contact</a>
-    </li>
-    <li>
-      <a routerLink="/form.html" routerLinkActive="active">Form</a>
-    </li>
-    <li>
-      <a routerLink="/check.html" routerLinkActive="active">Check</a>
-    </li>
-    <li>
-      <a routerLink="/settings.html" routerLinkActive="active">Settings</a>
-    </li>
-    <li>
-      <a routerLink="/admin.html" routerLinkActive="active">Admin</a>
-    </li>
-    <li class="right">
-      <a routerLink="/login.html" routerLinkActive="active">Login</a>
-    </li>
-    <li>
-      <a routerLink="/register.html" routerLinkActive="active">Register</a>
-    </li>
-    <li>
-      <button type="button"
-              class="logout-btn"
-              (click)="logout($event)">
-        Logout
-      </button>
-    </li>
-  </ul>
+<nav class="nav">
+  <div class="brand">MySite</div>
+  <div class="links">
+    <!-- Home: ถ้า login แล้วไป /home.html ถ้ายังไม่ login ให้ไป /index.html แบบของเดิม -->
+    <a
+      [routerLink]="me ? '/home.html' : '/index.html'"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }"
+    >
+      Home
+    </a>
+
+    <a routerLink="/about.html" routerLinkActive="active">About</a>
+    <a routerLink="/contact.html" routerLinkActive="active">Contact</a>
+    <a routerLink="/download.html" routerLinkActive="active">Download</a>
+
+    <!-- ปุ่มสลับธีม เหมือนปุ่ม 🌓 เดิม -->
+    <button
+      id="themeToggle"
+      type="button"
+      (click)="toggleTheme()"
+      aria-label="Toggle theme"
+    >
+      🌓
+    </button>
+
+    <!-- เมนู user เหมือนของเดิม (avatar + ชื่อ + dropdown Settings / Admin / Logout) -->
+    <ng-container *ngIf="me; else loggedOut">
+      <div
+        id="userMenu"
+        class="user-menu"
+        [class.open]="userMenuOpen"
+        (click)="toggleUserMenu()"
+      >
+        <img
+          id="avatar"
+          [src]="me.profile_picture_url || 'assets/images/user.png'"
+          alt="avatar"
+        />
+        <span id="uname">{{ me.username || me.email }}</span>
+
+        <div class="dropdown">
+          <!-- ลิงก์ Admin โชว์เฉพาะ role admin -->
+          <a
+            *ngIf="me.role === 'admin'"
+            routerLink="/admin.html"
+            routerLinkActive="active"
+          >
+            Admin
+          </a>
+
+          <a routerLink="/settings.html" routerLinkActive="active">
+            Settings
+          </a>
+
+          <button
+            id="logoutBtn"
+            class="linklike"
+            type="button"
+            (click)="logout($event)"
+          >
+            Logout
+          </button>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- กรณียังไม่ login: navbar จะไม่มีเมนู user
+         (Register / Login อยู่ที่ตัวหน้า index เหมือนเดิม) -->
+    <ng-template #loggedOut></ng-template>
+  </div>
 </nav>
 
-<main class="page-container">
+<!-- ใช้ class="container" ให้ layout/content เหมือน style เดิมใน New folder (6) -->
+<main class="container">
   <router-outlet></router-outlet>
 </main>
