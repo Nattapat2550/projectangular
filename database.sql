@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS users (
   email                VARCHAR(255) UNIQUE NOT NULL,
   password_hash        VARCHAR(255),
   role                 VARCHAR(10) NOT NULL DEFAULT 'user',
-  profile_picture_url  TEXT DEFAULT 'images/user.png',
+  profile_picture_url  TEXT DEFAULT 'assets/user.png',
   is_email_verified    BOOLEAN NOT NULL DEFAULT FALSE,
   oauth_provider       VARCHAR(20),
   oauth_id             VARCHAR(255),
