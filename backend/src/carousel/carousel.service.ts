@@ -1,43 +1,59 @@
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { DatabaseService } from '../database/database.service';
 
 @Injectable()
 export class CarouselService {
-  private pureApiUrl: string;
-  private apiKey: string;
-
-  constructor(private readonly config: ConfigService) {
-    this.pureApiUrl = this.config.get<string>('PURE_API_BASE_URL');
-    this.apiKey = this.config.get<string>('PURE_API_KEY');
-  }
-
-  private async callPureApi(endpoint: string, method: string = 'POST', body: any = {}) {
-    try {
-      const res = await fetch(`${this.pureApiUrl}/api/internal${endpoint}`, {
-        method,
-        headers: { 'Content-Type': 'application/json', 'x-api-key': this.apiKey },
-        body: method !== 'GET' ? JSON.stringify(body) : undefined,
-      });
-      if (!res.ok) return null;
-      const json = await res.json();
-      return json.data !== undefined ? json.data : json;
-    } catch { return null; }
-  }
+  constructor(private readonly db: DatabaseService) {}
 
   async listCarouselItems() {
-    const data = await this.callPureApi('/carousel/list', 'GET');
-    return data || [];
+    const { rows } = await this.db.query(
+      `SELECT id, item_index, title, subtitle, description, image_dataurl
+         FROM carousel_items
+        ORDER BY item_index ASC, id ASC`,
+    );
+    return rows;
   }
 
-  async createCarouselItem(args: any) {
-    return this.callPureApi('/carousel/create', 'POST', args);
+  async createCarouselItem(args: {
+    itemIndex: number;
+    title?: string;
+    subtitle?: string;
+    description?: string;
+    imageDataUrl?: string;
+  }) {
+    const { itemIndex, title, subtitle, description, imageDataUrl } = args;
+    const { rows } = await this.db.query(
+      `INSERT INTO carousel_items (item_index, title, subtitle, description, image_dataurl)
+       VALUES ($1,$2,$3,$4,$5)
+       RETURNING id, item_index, title, subtitle, description, image_dataurl`,
+      [itemIndex, title || null, subtitle || null, description || null, imageDataUrl || null],
+    );
+    return rows[0];
   }
 
-  async updateCarouselItem(id: number, args: any) {
-    return this.callPureApi('/carousel/update', 'POST', { id, ...args });
+  async updateCarouselItem(id: number, args: {
+    itemIndex?: number;
+    title?: string;
+    subtitle?: string;
+    description?: string;
+    imageDataUrl?: string;
+  }) {
+    const { itemIndex, title, subtitle, description, imageDataUrl } = args;
+    const { rows } = await this.db.query(
+      `UPDATE carousel_items SET
+         item_index = COALESCE($2, item_index),
+         title = COALESCE($3, title),
+         subtitle = COALESCE($4, subtitle),
+         description = COALESCE($5, description),
+         image_dataurl = COALESCE($6, image_dataurl)
+       WHERE id=$1
+       RETURNING id, item_index, title, subtitle, description, image_dataurl`,
+      [id, itemIndex, title || null, subtitle || null, description || null, imageDataUrl || null],
+    );
+    return rows[0] || null;
   }
 
   async deleteCarouselItem(id: number) {
-    await this.callPureApi('/carousel/delete', 'POST', { id });
+    await this.db.query('DELETE FROM carousel_items WHERE id=$1', [id]);
   }
 }
