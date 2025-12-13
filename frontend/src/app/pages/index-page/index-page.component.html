@@ -1,0 +1,22 @@
+<nav class="nav">
+  <div class="brand">MySite</div>
+  <div class="links">
+    <a routerLink="/">Index</a>
+    <a routerLink="/home">Home</a>
+    <a routerLink="/about">About</a>
+    <a routerLink="/contact">Contact</a>
+    <a routerLink="/download">Download</a>
+    <a routerLink="/login">Login</a>
+    <a routerLink="/register">Register</a>
+    <button id="themeToggle" (click)="toggleTheme()">🌓</button>
+  </div>
+</nav>
+
+<main class="container">
+  <h1>Welcome. Please login or register.</h1>
+  <p>ระบบนี้ใช้สำหรับทดลอง login / register, Google login และดาวน์โหลดโปรแกรม</p>
+  <div class="actions">
+    <a class="btn" routerLink="/register">Register</a>
+    <a class="btn outline" routerLink="/login">Login</a>
+  </div>
+</main>

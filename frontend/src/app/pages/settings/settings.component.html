@@ -1,0 +1,44 @@
+<nav class="nav">
+  <div class="brand">MySite</div>
+  <div class="links">
+    <a routerLink="/home">Home</a>
+    <a routerLink="/about">About</a>
+    <a routerLink="/contact">Contact</a>
+    <a routerLink="/download">Download</a>
+    <button id="themeToggle" (click)="toggleTheme()">🌓</button>
+    <div id="userMenu" class="user-menu">
+      <img id="avatar" [src]="avatarUrl" alt="avatar" />
+      <span id="uname">{{ username }}</span>
+      <div class="dropdown">
+        <a routerLink="/settings" class="active">Settings</a>
+        <button id="logoutBtn" class="linklike" (click)="logout()">Logout</button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<main class="container">
+  <h2>Settings</h2>
+
+  <section class="card">
+    <h3>Profile</h3>
+    <p>Email: <strong>{{ email }}</strong></p>
+    <label>Username</label>
+    <input type="text" [(ngModel)]="newUsername" name="newUsername" />
+    <button class="btn" (click)="saveProfile()" [disabled]="loading">
+      {{ loading ? 'Saving...' : 'Save' }}
+    </button>
+    <p class="muted" *ngIf="msg">{{ msg }}</p>
+  </section>
+
+  <section class="card">
+    <h3>Password</h3>
+    <p>
+      หากต้องการเปลี่ยนรหัสผ่าน สามารถให้ระบบส่งลิงก์ reset ไปที่อีเมลปัจจุบันได้
+    </p>
+    <button class="btn outline" (click)="sendResetLink()">
+      Send reset link to {{ email }}
+    </button>
+    <p class="muted" *ngIf="resetMsg">{{ resetMsg }}</p>
+  </section>
+</main>

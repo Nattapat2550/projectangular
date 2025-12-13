@@ -1,0 +1,11 @@
+// frontend/src/main.ts
+
+// ✅ ให้ Angular เห็น Zone.js ก่อน bootstrapping
+import 'zone.js'; // Required for Angular change detection with zones
+
+import { bootstrapApplication } from '@angular/platform-browser';
+import { appConfig } from './app/app.config';
+import { AppComponent } from './app/app.component';
+
+bootstrapApplication(AppComponent, appConfig)
+  .catch((err) => console.error(err));
