@@ -1,29 +1,19 @@
-import { Controller, Get, Res } from '@nestjs/common';
-import { Response } from 'express';
-import * as path from 'path';
-import * as fs from 'fs';
+import { Controller, Get, Res, Redirect } from '@nestjs/common';
+import { DownloadService } from './download.service';
 
 @Controller('download')
 export class DownloadController {
-  private safeDownload(res: Response, filePath: string, filename: string) {
-    fs.access(filePath, fs.constants.R_OK, (err) => {
-      if (err) {
-        console.error('download error', err);
-        return res.status(404).json({ error: 'File not found' });
-      }
-      return res.download(filePath, filename);
-    });
+  constructor(private readonly downloadService: DownloadService) {}
+
+  @Get('android')
+  @Redirect() // ใช้ Redirect ของ NestJS
+  downloadAndroid() {
+    return { url: this.downloadService.getDownloadUrl('android') };
   }
 
   @Get('windows')
-  async downloadWindows(@Res() res: Response) {
-    const filePath = path.join(process.cwd(), 'app', 'MyAppSetup.exe');
-    this.safeDownload(res, filePath, 'MyAppSetup.exe');
-  }
-
-  @Get('android')
-  async downloadAndroid(@Res() res: Response) {
-    const filePath = path.join(process.cwd(), 'app', 'app-release.apk');
-    this.safeDownload(res, filePath, 'app-release.apk');
+  @Redirect()
+  downloadWindows() {
+    return { url: this.downloadService.getDownloadUrl('windows') };
   }
 }

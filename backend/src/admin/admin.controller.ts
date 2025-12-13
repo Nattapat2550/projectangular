@@ -34,22 +34,16 @@ export class AdminController {
     @Body('role') role?: string,
     @Body('profile_picture_url') profilePictureUrl?: string,
   ) {
-    const { rows } = await (this.users as any).db.query(
-      `UPDATE users SET
-         username = COALESCE($2, username),
-         email = COALESCE($3, email),
-         role = COALESCE($4, role),
-         profile_picture_url = COALESCE($5, profile_picture_url)
-       WHERE id=$1
-       RETURNING id, username, email, role, profile_picture_url, is_email_verified, created_at, updated_at`,
-      [id, username || null, email || null, role || null, profilePictureUrl || null],
-    );
-    const row = rows[0];
-    if (!row) return { error: 'Not found' };
-    return row;
+    // แก้ไข: เรียก adminUpdateUser ใน service แทนการ query ตรงๆ
+    return this.users.adminUpdateUser(Number(id), {
+      username,
+      email,
+      role,
+      profile_picture_url: profilePictureUrl,
+    });
   }
 
-  // Carousel admin endpoints
+  // ... (ส่วน Carousel ไม่ต้องแก้ เพราะเรียก service อยู่แล้ว) ...
   @Get('carousel')
   async listCarousel() {
     return this.carousel.listCarouselItems();

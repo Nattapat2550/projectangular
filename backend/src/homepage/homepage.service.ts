@@ -1,24 +1,30 @@
 import { Injectable } from '@nestjs/common';
-import { DatabaseService } from '../database/database.service';
+import { ConfigService } from '@nestjs/config';
+import axios from 'axios';
 
 @Injectable()
 export class HomepageService {
-  constructor(private readonly db: DatabaseService) {}
+  private pureApiUrl: string;
+  private pureApiKey: string;
+
+  constructor(private readonly config: ConfigService) {
+    this.pureApiUrl = this.config.get<string>('PURE_API_BASE_URL');
+    this.pureApiKey = this.config.get<string>('PURE_API_KEY');
+  }
 
   async getHomepageContent() {
-    const { rows } = await this.db.query(
-      'SELECT section_name, content FROM homepage_content ORDER BY section_name ASC',
-    );
-    return rows;
+    const res = await axios.get(`${this.pureApiUrl}/api/internal/homepage/list`, {
+      headers: { 'x-api-key': this.pureApiKey },
+    });
+    return res.data.data;
   }
 
   async upsertSection(sectionName: string, content: string) {
-    const q = `
-      INSERT INTO homepage_content (section_name, content)
-      VALUES ($1,$2)
-      ON CONFLICT (section_name) DO UPDATE SET content=EXCLUDED.content
-      RETURNING section_name, content`;
-    const { rows } = await this.db.query(q, [sectionName, content || '']);
-    return rows[0];
+    const res = await axios.post(
+      `${this.pureApiUrl}/api/internal/homepage/update`,
+      { section_name: sectionName, content },
+      { headers: { 'x-api-key': this.pureApiKey } }
+    );
+    return res.data.data;
   }
 }
