@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { envConfig } from './config/env.config';
-import { DatabaseModule } from './database/database.module';
 import { EmailModule } from './email/email.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
@@ -16,7 +15,6 @@ import { DownloadModule } from './download/download.module';
       isGlobal: true,
       load: [envConfig],
     }),
-    DatabaseModule,
     EmailModule,
     UsersModule,
     AuthModule,

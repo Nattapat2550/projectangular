@@ -12,6 +12,7 @@ export class UsersService {
     this.pureApiKey = this.config.get<string>('PURE_API_KEY');
   }
 
+  // Helper สำหรับยิง Request ไปยัง Pure API
   private async callApi(method: 'GET' | 'POST', path: string, data?: any) {
     try {
       const res = await axios({
@@ -21,13 +22,17 @@ export class UsersService {
         headers: { 'x-api-key': this.pureApiKey },
       });
       return res.data.data;
-    } catch (error) {
+    } catch (error: any) {
       console.error(`Error calling Pure API (${path}):`, error.response?.data || error.message);
-      // ส่งกลับ null หรือ throw ตามบริบทเดิม
-      if (error.response?.status === 404) return null;
-      throw new InternalServerErrorException('External API Error');
+      return null;
     }
   }
+
+  // --- ฟังก์ชันที่ AdminController เรียกใช้ (ที่เป็นต้นเหตุของ Error) ---
+  async adminUpdateUser(id: number, data: any) {
+    return this.callApi('POST', '/admin/users/update', { id, ...data });
+  }
+  // -----------------------------------------------------------
 
   async createUserByEmail(email: string) {
     return this.callApi('POST', '/create-user-email', { email });
@@ -45,11 +50,10 @@ export class UsersService {
     return this.callApi('POST', '/find-user', { provider, oauthId });
   }
 
-  // ฟังก์ชันนี้ Pure-API ทำรวมอยู่ใน validateAndConsumeCode แล้ว แต่ถ้าต้องการแยกใช้
-  // ใน internal routes ไม่มี endpoint นี้โดยตรง แต่อาจไม่จำเป็นต้องใช้แยก
   async markEmailVerified(userId: number) {
-    // หากจำเป็นต้องใช้จริงๆ อาจต้องเพิ่ม endpoint ใน pure-api หรือใช้ admin update
-    return { id: userId, is_email_verified: true }; 
+    // Pure API จัดการเรื่องนี้ให้ตอน verify code แล้ว
+    // ฟังก์ชันนี้คืนค่า User ปัจจุบันกลับไปเพื่อให้ flow เดิมทำงานต่อได้
+    return this.findUserById(userId);
   }
 
   async setUsernameAndPassword(email: string, username: string, password: string) {
@@ -57,11 +61,10 @@ export class UsersService {
   }
 
   async updateProfile(userId: number, data: { username?: string; profilePictureUrl?: string }) {
-    // ใช้ Endpoint ของ Admin update แทน เพราะ Pure-API internal มีให้ใช้
-    return this.callApi('POST', '/admin/users/update', { 
-      id: userId, 
-      username: data.username, 
-      profile_picture_url: data.profilePictureUrl 
+    return this.callApi('POST', '/admin/users/update', {
+      id: userId,
+      username: data.username,
+      profile_picture_url: data.profilePictureUrl
     });
   }
 
@@ -73,23 +76,21 @@ export class UsersService {
     return this.callApi('GET', '/admin/users');
   }
 
-  // ฟังก์ชันใหม่สำหรับ AdminController เพื่อไม่ให้เรียก db โดยตรง
-  async adminUpdateUser(id: number, data: any) {
-    return this.callApi('POST', '/admin/users/update', { id, ...data });
-  }
-
   async storeVerificationCode(userId: number, code: string, expiresAt: Date) {
     return this.callApi('POST', '/store-verification-code', { userId, code, expiresAt });
   }
 
   async validateAndConsumeCode(email: string, code: string) {
-    const res = await axios.post(
-      `${this.pureApiUrl}/api/internal/verify-code`,
-      { email, code },
-      { headers: { 'x-api-key': this.pureApiKey } }
-    );
-    // pure-api return { ok: true, userId: ... } or { ok: false, reason: ... }
-    return res.data;
+    try {
+      const res = await axios.post(
+        `${this.pureApiUrl}/api/internal/verify-code`,
+        { email, code },
+        { headers: { 'x-api-key': this.pureApiKey } }
+      );
+      return res.data;
+    } catch (error) {
+      return { ok: false, reason: 'error' };
+    }
   }
 
   async setOAuthUser(args: {
