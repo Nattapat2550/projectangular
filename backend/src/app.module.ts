@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { AppController } from './app.controller';
 import { envConfig } from './config/env.config';
 import { EmailModule } from './email/email.module';
 import { UsersModule } from './users/users.module';
@@ -23,5 +24,7 @@ import { DownloadModule } from './download/download.module';
     AdminModule,
     DownloadModule,
   ],
+  controllers: [AppController],
+  providers: [],
 })
 export class AppModule {}
