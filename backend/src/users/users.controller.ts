@@ -1,21 +1,22 @@
 import {
-  Controller,
-  Get,
-  Put,
-  Delete,
-  Post,
-  UseGuards,
+  BadRequestException,
   Body,
+  Controller,
+  Delete,
+  Get,
+  Post,
+  Put,
   Res,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
-  BadRequestException,
 } from '@nestjs/common';
 import { Response } from 'express';
+import { FileInterceptor } from '@nestjs/platform-express';
+
 import { JwtAuthGuard } from '../common/jwt-auth.guard';
 import { CurrentUser } from '../common/current-user.decorator';
 import { UsersService } from './users.service';
-import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('users')
 export class UsersController {
@@ -39,14 +40,24 @@ export class UsersController {
   async me(@CurrentUser() user: any) {
     const u = await this.users.findUserById(user.id);
     if (!u) throw new BadRequestException('Not found');
-    const { id, username, email, role, profile_picture_url } = u;
-    return { id, username, email, role, profile_picture_url };
+
+    return {
+      id: u.id,
+      username: u.username,
+      email: u.email,
+      role: u.role,
+      profile_picture_url: u.profile_picture_url,
+    };
   }
 
   @UseGuards(JwtAuthGuard)
   @Put('me')
-  async updateMe(@CurrentUser() user: any, @Body('username') username?: string) {
+  async updateMe(
+    @CurrentUser() user: any,
+    @Body('username') username?: string,
+  ) {
     const u = await this.users.updateProfile(user.id, { username });
+
     return {
       id: u.id,
       username: u.username,
@@ -60,17 +71,26 @@ export class UsersController {
   @Post('me/avatar')
   @UseInterceptors(
     FileInterceptor('avatar', {
-      limits: { fileSize: 4 * 1024 * 1024 }, // 4MB
+      limits: { fileSize: 4 * 1024 * 1024 },
     }),
   )
-  async uploadAvatar(@CurrentUser() user: any, @UploadedFile() file?: Express.Multer.File) {
+  async uploadAvatar(
+    @CurrentUser() user: any,
+    // ✅ ไม่ใช้ Express namespace เพื่อกัน TS2503
+    @UploadedFile() file?: any,
+  ) {
     if (!file) throw new BadRequestException('No file');
-    if (!file.mimetype?.startsWith('image/')) throw new BadRequestException('Invalid file');
+    if (!file.mimetype || !String(file.mimetype).startsWith('image/')) {
+      throw new BadRequestException('Invalid file');
+    }
 
-    const b64 = file.buffer.toString('base64');
+    const b64 = Buffer.from(file.buffer).toString('base64');
     const dataUrl = `data:${file.mimetype};base64,${b64}`;
 
-    const u = await this.users.updateProfile(user.id, { profilePictureUrl: dataUrl });
+    const u = await this.users.updateProfile(user.id, {
+      profilePictureUrl: dataUrl,
+    });
+
     return {
       id: u.id,
       username: u.username,
@@ -84,7 +104,9 @@ export class UsersController {
   @Delete('me')
   async deleteMe(@CurrentUser() user: any, @Res() res: Response) {
     await this.users.deleteUser(user.id);
+
     this.clearAuthCookie(res);
+
     return res.json({ ok: true });
   }
 }
