@@ -47,6 +47,10 @@ export class RegisterComponent implements OnInit {
     }
   }
 
+  loginWithGoogle() {
+    window.location.href = `${this.api.apiBase}/auth/google`;
+  }
+
   private applyStoredTheme() {
     const theme = localStorage.getItem('theme');
     if (theme === 'dark') {

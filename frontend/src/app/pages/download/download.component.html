@@ -1,30 +1,31 @@
 <nav class="nav">
   <div class="brand">MySite</div>
   <div class="links">
-    <a routerLink="/">Index</a>
-    <a routerLink="/home">Home</a>
-    <a routerLink="/about">About</a>
-    <a routerLink="/contact">Contact</a>
-    <a routerLink="/download" class="active">Download</a>
-    <a routerLink="/login">Login</a>
-    <a routerLink="/register">Register</a>
+    <a routerLink="/" class="active">Home</a>
     <button id="themeToggle" (click)="toggleTheme()">🌓</button>
   </div>
 </nav>
 
 <main class="container">
-  <h2>Download</h2>
-  <p>เลือกดาวน์โหลดโปรแกรมได้ตามปุ่มด้านล่าง:</p>
-  <div class="actions">
-    <a
-      class="btn"
-      [href]="backendBaseUrl + '/api/download/windows'"
-      >Download for Windows</a
-    >
-    <a
-      class="btn outline"
-      [href]="backendBaseUrl + '/api/download/android'"
-      >Download for Android</a
-    >
+  <h1>Download</h1>
+  <div class="card-grid">
+    <div class="card">
+      <h2>Windows</h2>
+      <p>Download the Windows version.</p>
+      <button class="btn" id="downloadWindows" (click)="downloadWindows()">
+        Download for Windows
+      </button>
+    </div>
+    <div class="card">
+      <h2>Android</h2>
+      <p>Download the Android version.</p>
+      <button
+        class="btn outline"
+        id="downloadAndroid"
+        (click)="downloadAndroid()"
+      >
+        Download for Android
+      </button>
+    </div>
   </div>
 </main>

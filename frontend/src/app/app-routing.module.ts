@@ -12,16 +12,28 @@ import { ResetComponent } from './pages/reset/reset.component';
 import { SettingsComponent } from './pages/settings/settings.component';
 import { AdminComponent } from './pages/admin/admin.component';
 
+import { authGuard } from './guards/auth.guard';
+import { adminGuard } from './guards/admin.guard';
+import { guestOnlyGuard } from './guards/guest-only.guard';
+
 export const routes: Routes = [
-  { path: '', component: IndexPageComponent },
+  // Guest-only (redirect away if already logged in)
+  { path: '', component: IndexPageComponent, canActivate: [guestOnlyGuard] },
   { path: 'index.html', redirectTo: '', pathMatch: 'full' },
 
-  { path: 'login', component: LoginComponent },
+  { path: 'login', component: LoginComponent, canActivate: [guestOnlyGuard] },
   { path: 'login.html', redirectTo: 'login', pathMatch: 'full' },
 
-  { path: 'home', component: HomeComponent },
-  { path: 'home.html', redirectTo: 'home', pathMatch: 'full' },
+  { path: 'register', component: RegisterComponent, canActivate: [guestOnlyGuard] },
+  { path: 'register.html', redirectTo: 'register', pathMatch: 'full' },
 
+  { path: 'check', component: CheckComponent, canActivate: [guestOnlyGuard] },
+  { path: 'check.html', redirectTo: 'check', pathMatch: 'full' },
+
+  { path: 'reset', component: ResetComponent, canActivate: [guestOnlyGuard] },
+  { path: 'reset.html', redirectTo: 'reset', pathMatch: 'full' },
+
+  // Shared pages (allowed for both guest + logged-in)
   { path: 'about', component: AboutComponent },
   { path: 'about.html', redirectTo: 'about', pathMatch: 'full' },
 
@@ -31,22 +43,19 @@ export const routes: Routes = [
   { path: 'download', component: DownloadComponent },
   { path: 'download.html', redirectTo: 'download', pathMatch: 'full' },
 
-  { path: 'register', component: RegisterComponent },
-  { path: 'register.html', redirectTo: 'register', pathMatch: 'full' },
-
-  { path: 'check', component: CheckComponent },
-  { path: 'check.html', redirectTo: 'check', pathMatch: 'full' },
-
+  // Profile completion page (keep accessible; backend decides)
   { path: 'form', component: FormComponent },
   { path: 'form.html', redirectTo: 'form', pathMatch: 'full' },
 
-  { path: 'reset', component: ResetComponent },
-  { path: 'reset.html', redirectTo: 'reset', pathMatch: 'full' },
+  // Auth-only
+  { path: 'home', component: HomeComponent, canActivate: [authGuard] },
+  { path: 'home.html', redirectTo: 'home', pathMatch: 'full' },
 
-  { path: 'settings', component: SettingsComponent },
+  { path: 'settings', component: SettingsComponent, canActivate: [authGuard] },
   { path: 'settings.html', redirectTo: 'settings', pathMatch: 'full' },
 
-  { path: 'admin', component: AdminComponent },
+  // Admin-only
+  { path: 'admin', component: AdminComponent, canActivate: [adminGuard] },
   { path: 'admin.html', redirectTo: 'admin', pathMatch: 'full' },
 
   { path: '**', redirectTo: '' },

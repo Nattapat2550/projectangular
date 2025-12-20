@@ -34,7 +34,7 @@ export class LoginComponent implements OnInit {
   async onSubmit() {
     this.msg = '';
     try {
-      const r = await this.api.request<{ ok: boolean; role?: string }>(
+      const r = await this.api.request<{ ok: boolean; role?: string; token?: string }>(
         '/api/auth/login',
         {
           method: 'POST',
@@ -45,23 +45,18 @@ export class LoginComponent implements OnInit {
           },
         },
       );
-      if (r.role === 'admin') {
-        this.router.navigate(['/admin']);
-      } else {
-        this.router.navigate(['/home']);
-      }
+
+      // Optional: token fallback (if backend ever returns it)
+      if ((r as any)?.token) localStorage.setItem('auth_token', (r as any).token);
+
+      this.router.navigate([r.role === 'admin' ? '/admin' : '/home']);
     } catch (e: any) {
       this.msg = e.message || 'Login failed';
     }
   }
 
-  async loginWithGoogle() {
-    const base =
-      window.location.hostname === 'localhost' ||
-      window.location.hostname === '127.0.0.1'
-        ? 'http://localhost:5000'
-        : 'https://projectangular1.onrender.com';
-    window.location.href = `${base}/api/auth/google`;
+  loginWithGoogle() {
+    window.location.href = `${this.api.apiBase}/auth/google`;
   }
 
   private applyStoredTheme() {

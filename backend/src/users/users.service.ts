@@ -5,6 +5,16 @@ import {
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 
+export type OAuthProvider = 'google';
+
+export interface SetOAuthUserInput {
+  email: string;
+  provider: OAuthProvider;
+  oauthId: string;
+  pictureUrl?: string;
+  name?: string;
+}
+
 @Injectable()
 export class UsersService {
   private pureApiUrl: string;
@@ -64,12 +74,10 @@ export class UsersService {
           continue;
         }
 
-        // ถ้าเป็น transient แล้วหมดรอบ retry => ตอบ 503 ให้ frontend (ไม่ใช่ 500)
         if (this.isTransientError(err)) {
           throw new ServiceUnavailableException('Pure API is waking up. Please try again in a moment.');
         }
 
-        // non-transient => โยนต่อให้ logic เดิมด้านล่างจัดการ
         throw err;
       }
     }
@@ -89,10 +97,7 @@ export class UsersService {
 
       return res.data?.data ?? null;
     } catch (error: any) {
-      // ถ้าเป็น 404 ให้ return null เพื่อให้ AuthService จัดการ (เช่น 401)
       if (error?.response?.status === 404) return null;
-
-      // ถ้าโดนโยน ServiceUnavailableException แล้ว ให้ปล่อยขึ้นไปเลย
       if (error instanceof ServiceUnavailableException) throw error;
 
       console.error(`Error calling Pure API (${path}):`, error.response?.data || error.message);
@@ -105,7 +110,6 @@ export class UsersService {
   }
 
   async findUserByEmail(email: string) {
-    // Pure API จะ return user object รวมถึง password_hash เพื่อนำไป check ใน AuthService
     return this.callApi('POST', '/find-user', { email });
   }
 
@@ -114,7 +118,20 @@ export class UsersService {
   }
 
   async findUserByOAuth(provider: string, oauthId: string) {
+    // pure-api schema: { provider, oauthId } (camelCase)
     return this.callApi('POST', '/find-user', { provider, oauthId });
+  }
+
+  // ✅ เพิ่มให้หาย error: Property 'setOAuthUser' does not exist
+  async setOAuthUser(input: SetOAuthUserInput) {
+    // pure-api internal schema ใช้ camelCase: oauthId / pictureUrl
+    return this.callApi('POST', '/set-oauth-user', {
+      email: input.email,
+      provider: input.provider,
+      oauthId: input.oauthId,
+      pictureUrl: input.pictureUrl,
+      name: input.name,
+    });
   }
 
   async setUsernameAndPassword(email: string, username: string, password: string) {
@@ -131,7 +148,6 @@ export class UsersService {
     userId: number,
     data: { username?: string; profilePictureUrl?: string },
   ) {
-    // ใช้ endpoint เดียวกับ admin update ได้ เพราะ pure-api internal อนุญาตให้แก้ได้
     return this.callApi('POST', '/admin/users/update', {
       id: userId,
       username: data.username,
@@ -140,6 +156,7 @@ export class UsersService {
   }
 
   async deleteUser(userId: number) {
+    // ⚠️ ต้องมี endpoint นี้ใน pure-api internal ด้วย (ถ้ายังไม่มีจะ 404)
     await this.callApi('POST', '/delete-user', { id: userId });
   }
 
@@ -160,7 +177,6 @@ export class UsersService {
         headers: { 'x-api-key': this.pureApiKey },
       });
 
-      // Pure API return { ok: true/false, ... } ตรงๆ
       return res.data;
     } catch (error: any) {
       if (error instanceof ServiceUnavailableException) throw error;

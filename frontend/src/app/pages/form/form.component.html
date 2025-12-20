@@ -1,20 +1,17 @@
 <nav class="nav">
   <div class="brand">MySite</div>
   <div class="links">
-    <a routerLink="/">Index</a>
-    <a routerLink="/about">About</a>
-    <a routerLink="/contact">Contact</a>
-    <a routerLink="/download">Download</a>
-    <a routerLink="/login">Login</a>
-    <a routerLink="/register">Register</a>
+    <a routerLink="/" class="active">Home</a>
     <button id="themeToggle" (click)="toggleTheme()">🌓</button>
   </div>
 </nav>
 
-<main class="container">
-  <h2>Complete Profile</h2>
-  <p>สร้าง username และ password สำหรับ: <strong>{{ email }}</strong></p>
+<main class="container small">
+  <h1>Complete profile</h1>
+
   <form (ngSubmit)="onSubmit()">
+    <p>Account: <strong>{{ email }}</strong></p>
+
     <label>Username</label>
     <input type="text" [(ngModel)]="username" name="username" required />
 
@@ -26,22 +23,15 @@
       required
     />
 
-    <label>Confirm Password</label>
-    <input
-      [type]="showPw ? 'text' : 'password'"
-      [(ngModel)]="confirmPassword"
-      name="confirmPassword"
-      required
-    />
-
-    <label>
-      <input type="checkbox" [(ngModel)]="showPw" name="showPw" /> Show
-      Password
+    <label class="checkbox">
+      <input type="checkbox" [(ngModel)]="showPw" name="showPw" />
+      Show password
     </label>
 
     <button class="btn" type="submit" [disabled]="loading">
-      {{ loading ? 'Saving...' : 'Save & Continue' }}
+      {{ loading ? 'Saving…' : 'Save' }}
     </button>
+
+    <p class="notice" *ngIf="msg">{{ msg }}</p>
   </form>
-  <p class="muted" *ngIf="msg">{{ msg }}</p>
 </main>

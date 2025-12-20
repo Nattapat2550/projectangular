@@ -7,18 +7,16 @@ import { NgIf } from '@angular/common';
 @Component({
   standalone: true,
   selector: 'app-settings',
-  imports: [RouterLink, FormsModule, NgIf],
+  imports: [FormsModule, RouterLink, NgIf],
   templateUrl: './settings.component.html',
 })
 export class SettingsComponent implements OnInit {
   username = '';
-  email = '';
   avatarUrl = 'assets/user.png';
 
   newUsername = '';
   msg = '';
-  resetMsg = '';
-  loading = false;
+  busy = false;
 
   constructor(private api: ApiService, private router: Router) {}
 
@@ -35,72 +33,95 @@ export class SettingsComponent implements OnInit {
     );
   }
 
-  async logout() {
+  async loadMe() {
     try {
-      await this.api.request('/api/auth/logout', { method: 'POST' });
-    } catch {
-      // ignore
-    }
-    this.router.navigate(['/']);
-  }
-
-  private async loadMe() {
-    try {
-      const me = await this.api.request<{
-        id: number;
-        username: string;
-        email: string;
-        role: string;
-        profile_picture_url: string;
-      }>('/api/auth/me', { method: 'GET' });
-      this.username = me.username || me.email;
-      this.email = me.email;
-      this.avatarUrl = me.profile_picture_url || this.avatarUrl;
-      this.newUsername = this.username;
+      const me = await this.api.request<any>('/api/users/me');
+      this.username = me.username || me.email || '';
+      this.newUsername = me.username || '';
+      this.avatarUrl = me.profile_picture_url || 'assets/user.png';
     } catch (e: any) {
-      this.msg = e.message || 'Failed to load user';
-      this.router.navigate(['/login']);
+      this.msg = e.message || 'Please login';
+      this.router.navigate(['/']);
     }
   }
 
-  async saveProfile() {
+  async saveUsername() {
     this.msg = '';
-    this.loading = true;
+    this.busy = true;
     try {
-      const updated = await this.api.request<{
-        id: number;
-        username: string;
-        email: string;
-        role: string;
-        profile_picture_url: string;
-      }>('/api/auth/me', {
+      const r = await this.api.request<any>('/api/users/me', {
         method: 'PUT',
         body: { username: this.newUsername.trim() },
       });
-      this.username = updated.username || updated.email;
-      this.avatarUrl = updated.profile_picture_url || this.avatarUrl;
-      this.msg = 'Profile updated';
+      this.username = r.username || this.newUsername.trim() || this.username;
+      this.msg = 'Saved';
     } catch (e: any) {
-      this.msg = e.message || 'Failed to update profile';
+      this.msg = e.message || 'Failed';
     } finally {
-      this.loading = false;
+      this.busy = false;
     }
   }
 
-  async sendResetLink() {
-    this.resetMsg = '';
-    if (!this.email) {
-      this.resetMsg = 'No email';
+  async onAvatarSelected(evt: Event) {
+    const input = evt.target as HTMLInputElement;
+    if (!input.files || !input.files[0]) return;
+
+    const file = input.files[0];
+    if (!file.type.startsWith('image/')) {
+      this.msg = 'Please select an image file.';
+      input.value = '';
       return;
     }
+    if (file.size > 4 * 1024 * 1024) {
+      this.msg = 'Image too large (max 4MB).';
+      input.value = '';
+      return;
+    }
+
+    const fd = new FormData();
+    fd.append('avatar', file);
+
+    this.msg = '';
+    this.busy = true;
+
     try {
-      await this.api.request('/api/auth/forgot-password', {
+      const r = await this.api.request<any>('/api/users/me/avatar', {
         method: 'POST',
-        body: { email: this.email },
+        body: fd,
       });
-      this.resetMsg = 'ถ้ามีอีเมลนี้อยู่ในระบบ เราได้ส่งลิงก์ reset ไปแล้ว';
+      this.avatarUrl = r.profile_picture_url || this.avatarUrl;
+      this.msg = 'Avatar updated';
     } catch (e: any) {
-      this.resetMsg = e.message || 'Failed to send reset link';
+      this.msg = e.message || 'Upload failed';
+    } finally {
+      this.busy = false;
+    }
+  }
+
+  async deleteAccount() {
+    if (!confirm('Delete your account? This cannot be undone.')) return;
+
+    this.msg = '';
+    this.busy = true;
+    try {
+      await this.api.request('/api/users/me', { method: 'DELETE' });
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('auth_role');
+      this.router.navigate(['/']);
+    } catch (e: any) {
+      this.msg = e.message || 'Delete failed';
+    } finally {
+      this.busy = false;
+    }
+  }
+
+  async logout() {
+    try {
+      await this.api.request('/api/auth/logout', { method: 'POST' });
+    } finally {
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('auth_role');
+      this.router.navigate(['/']);
     }
   }
 

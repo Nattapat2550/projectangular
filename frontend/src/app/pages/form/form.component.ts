@@ -14,22 +14,22 @@ export class FormComponent implements OnInit {
   email = '';
   username = '';
   password = '';
-  confirmPassword = '';
   showPw = false;
   msg = '';
   loading = false;
 
   constructor(
     private route: ActivatedRoute,
-    private api: ApiService,
     private router: Router,
+    private api: ApiService,
   ) {}
 
   ngOnInit(): void {
     this.applyStoredTheme();
-    this.route.queryParamMap.subscribe((params) => {
-      this.email = params.get('email') || '';
-    });
+    this.email = this.route.snapshot.queryParamMap.get('email') || '';
+    if (!this.email) {
+      this.router.navigate(['/']);
+    }
   }
 
   toggleTheme() {
@@ -42,15 +42,8 @@ export class FormComponent implements OnInit {
 
   async onSubmit() {
     this.msg = '';
-    if (!this.email) {
-      this.msg = 'Missing email param';
-      return;
-    }
-    if (this.password !== this.confirmPassword) {
-      this.msg = 'Password does not match';
-      return;
-    }
     this.loading = true;
+
     try {
       await this.api.request('/api/auth/complete-profile', {
         method: 'POST',
@@ -60,9 +53,11 @@ export class FormComponent implements OnInit {
           password: this.password,
         },
       });
+
+      // cookie set by backend
       this.router.navigate(['/home']);
     } catch (e: any) {
-      this.msg = e.message || 'Failed to complete profile';
+      this.msg = e.message || 'Failed';
     } finally {
       this.loading = false;
     }

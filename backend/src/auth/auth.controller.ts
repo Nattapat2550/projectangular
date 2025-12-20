@@ -15,6 +15,14 @@ import { JwtAuthGuard } from '../common/jwt-auth.guard';
 import { CurrentUser } from '../common/current-user.decorator';
 import { UsersService } from '../users/users.service';
 
+function getBearerToken(req: Request): string | null {
+  const h = req.headers['authorization'];
+  if (!h) return null;
+  const v = Array.isArray(h) ? h[0] : h;
+  const m = v.match(/^Bearer\s+(.+)$/i);
+  return m ? m[1] : null;
+}
+
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -22,24 +30,38 @@ export class AuthController {
     private readonly users: UsersService,
   ) {}
 
-  private setAuthCookie(res: Response, token: string, remember: boolean) {
-    res.cookie('token', token, {
+  private cookieOptions(remember: boolean) {
+    const isProd =
+      process.env.NODE_ENV === 'production' || !!process.env.RENDER_EXTERNAL_URL;
+
+    // sameSite:none requires secure:true in modern browsers.
+    const sameSite = isProd ? 'none' : 'lax';
+
+    return {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      // แก้จาก 'None' → 'none'
-      sameSite: 'none',
+      secure: isProd,
+      sameSite: sameSite as 'none' | 'lax',
+      path: '/',
       maxAge: remember
         ? 1000 * 60 * 60 * 24 * 30
         : 1000 * 60 * 60 * 24,
-    });
+    };
+  }
+
+  private setAuthCookie(res: Response, token: string, remember: boolean) {
+    res.cookie('token', token, this.cookieOptions(remember));
   }
 
   private clearAuthCookie(res: Response) {
+    const isProd =
+      process.env.NODE_ENV === 'production' || !!process.env.RENDER_EXTERNAL_URL;
+    const sameSite = isProd ? 'none' : 'lax';
+
     res.clearCookie('token', {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      // แก้จาก 'None' → 'none'
-      sameSite: 'none',
+      secure: isProd,
+      sameSite: sameSite as 'none' | 'lax',
+      path: '/',
     });
   }
 
@@ -50,10 +72,7 @@ export class AuthController {
   }
 
   @Post('verify-code')
-  async verifyCode(
-    @Body('email') email: string,
-    @Body('code') code: string,
-  ) {
+  async verifyCode(@Body('email') email: string, @Body('code') code: string) {
     return this.auth.verifyCode(email, code);
   }
 
@@ -67,7 +86,8 @@ export class AuthController {
     const user = await this.auth.completeProfile(email, username, password);
     const token = this.auth.signToken(user);
     this.setAuthCookie(res, token, true);
-    return res.json({ ok: true });
+
+    return res.json({ ok: true, role: user.role });
   }
 
   // LOGIN
@@ -81,9 +101,12 @@ export class AuthController {
     const user = await this.auth.login(email, password);
     const token = this.auth.signToken(user);
     this.setAuthCookie(res, token, !!remember);
+
+    // (Optional) token fallback (frontend stores in localStorage when cookies are blocked)
     return res.json({
       ok: true,
       role: user.role,
+      token,
     });
   }
 
@@ -115,38 +138,39 @@ export class AuthController {
   }
 
   @Get('google/callback')
-  async googleCallback(
-    @Query('code') code: string,
-    @Res() res: Response,
-  ) {
+  async googleCallback(@Query('code') code: string, @Res() res: Response) {
     try {
       const user = await this.auth.handleGoogleCallback(code);
       const token = this.auth.signToken(user);
       this.setAuthCookie(res, token, true);
 
+      const fe = process.env.FRONTEND_URL || '';
+      const hash = `#token=${encodeURIComponent(token)}&role=${encodeURIComponent(
+        user.role || 'user',
+      )}`;
+
       if (!user.username) {
         return res.redirect(
-          `${process.env.FRONTEND_URL}/form?email=${encodeURIComponent(
-            user.email,
-          )}`,
+          `${fe}/form?email=${encodeURIComponent(user.email)}${hash}`,
         );
       }
       if (user.role === 'admin') {
-        return res.redirect(`${process.env.FRONTEND_URL}/admin`);
+        return res.redirect(`${fe}/admin${hash}`);
       }
-      return res.redirect(`${process.env.FRONTEND_URL}/home`);
+      return res.redirect(`${fe}/home${hash}`);
     } catch (e) {
+      // eslint-disable-next-line no-console
       console.error('google callback error', e);
-      return res.redirect(
-        `${process.env.FRONTEND_URL}/login?error=oauth_failed`,
-      );
+      const fe = process.env.FRONTEND_URL || '';
+      return res.redirect(`${fe}/login?error=oauth_failed`);
     }
   }
 
   // STATUS
   @Get('status')
   async status(@Req() req: Request) {
-    const token = (req.cookies as any)?.token;
+    const token =
+      (req as any).cookies?.token || getBearerToken(req) || (req.query?.token as any);
     return this.auth.statusFromToken(token);
   }
 
@@ -162,10 +186,7 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Put('me')
-  async updateMe(
-    @CurrentUser() user: any,
-    @Body('username') username?: string,
-  ) {
+  async updateMe(@CurrentUser() user: any, @Body('username') username?: string) {
     const updated = await this.users.updateProfile(user.id, { username });
     return {
       id: updated.id,

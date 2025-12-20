@@ -1,7 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { RouterLink, Router } from '@angular/router';
 import { ApiService } from '../../services/api.service';
-import { NgIf, NgForOf } from '@angular/common';
+import { NgForOf, NgIf } from '@angular/common';
 
 interface CarouselItem {
   id: number;
@@ -18,7 +18,7 @@ interface CarouselItem {
   imports: [RouterLink, NgIf, NgForOf],
   templateUrl: './home.component.html',
 })
-export class HomeComponent implements OnInit {
+export class HomeComponent implements OnInit, OnDestroy {
   username = '...';
   avatarUrl = 'assets/user.png';
   msg = '';
@@ -29,13 +29,26 @@ export class HomeComponent implements OnInit {
   welcomeHeader = '';
   mainParagraph = '';
 
+  private autoTimer: any = null;
+
   constructor(private api: ApiService, private router: Router) {}
 
   async ngOnInit() {
     this.applyStoredTheme();
+
     await this.loadMe();
     await this.loadHomepage();
     await this.loadCarousel();
+
+    this.startAuto();
+  }
+
+  ngOnDestroy(): void {
+    this.stopAuto();
+  }
+
+  get isAdmin(): boolean {
+    return (localStorage.getItem('auth_role') || '').toLowerCase() === 'admin';
   }
 
   toggleTheme() {
@@ -49,73 +62,86 @@ export class HomeComponent implements OnInit {
   async logout() {
     try {
       await this.api.request('/api/auth/logout', { method: 'POST' });
-    } catch {
-      // ignore
+    } finally {
+      // also clear fallback token
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('auth_role');
+      this.router.navigate(['/']);
     }
-    this.router.navigate(['/']);
   }
 
-  get currentItem(): CarouselItem | null {
-    return this.carouselItems[this.currentIndex] || null;
+  async loadMe() {
+    try {
+      const me = await this.api.request<any>('/api/auth/me');
+      const uname = me.username || me.email || 'User';
+      this.username = uname;
+      this.avatarUrl = me.profile_picture_url || 'assets/user.png';
+      localStorage.setItem('auth_role', me.role || 'user');
+    } catch (e: any) {
+      this.msg = e.message || 'Please login';
+      this.router.navigate(['/']);
+    }
   }
 
-  next() {
-    if (this.carouselItems.length === 0) return;
-    this.currentIndex = (this.currentIndex + 1) % this.carouselItems.length;
+  async loadHomepage() {
+    try {
+      const sections = await this.api.request<
+        { section_key: string; section_value: string }[]
+      >('/api/homepage');
+
+      const map = new Map(sections.map((s) => [s.section_key, s.section_value]));
+      this.welcomeHeader = map.get('welcome_header') || 'Welcome!';
+      this.mainParagraph = map.get('main_paragraph') || '';
+    } catch (e: any) {
+      this.msg = e.message || 'Failed to load homepage';
+    }
+  }
+
+  async loadCarousel() {
+    try {
+      const items = await this.api.request<CarouselItem[]>('/api/carousel');
+      this.carouselItems = (items || []).sort((a, b) => a.item_index - b.item_index);
+      this.currentIndex = 0;
+    } catch (e: any) {
+      this.msg = e.message || 'Failed to load carousel';
+    }
   }
 
   prev() {
-    if (this.carouselItems.length === 0) return;
+    if (!this.carouselItems.length) return;
     this.currentIndex =
       (this.currentIndex - 1 + this.carouselItems.length) %
       this.carouselItems.length;
   }
 
-  selectIndex(i: number) {
-    this.currentIndex = i;
+  next() {
+    if (!this.carouselItems.length) return;
+    this.currentIndex = (this.currentIndex + 1) % this.carouselItems.length;
   }
 
-  private async loadMe() {
-    try {
-      const me = await this.api.request<{
-        id: number;
-        username: string;
-        email: string;
-        role: string;
-        profile_picture_url: string;
-      }>('/api/auth/me', { method: 'GET' });
-      this.username = me.username || me.email;
-      this.avatarUrl = me.profile_picture_url || this.avatarUrl;
-    } catch (e: any) {
-      this.msg = e.message || 'Failed to load user';
-      this.router.navigate(['/login']);
-    }
+  goTo(i: number) {
+    if (!this.carouselItems.length) return;
+    this.currentIndex = Math.max(0, Math.min(i, this.carouselItems.length - 1));
   }
 
-  private async loadHomepage() {
-    try {
-      const sections = await this.api.request<
-        { section_name: string; content: string }[]
-      >('/api/homepage', { method: 'GET' });
-
-      const map = new Map<string, string>();
-      sections.forEach((s) => map.set(s.section_name, s.content));
-      this.welcomeHeader = map.get('welcome_header') || '';
-      this.mainParagraph = map.get('main_paragraph') || '';
-    } catch {
-      // ignore
-    }
+  pauseCarousel() {
+    this.stopAuto();
   }
 
-  private async loadCarousel() {
-    try {
-      this.carouselItems = await this.api.request<CarouselItem[]>(
-        '/api/carousel',
-        { method: 'GET' },
-      );
-      this.currentIndex = 0;
-    } catch {
-      // ignore
+  resumeCarousel() {
+    this.startAuto();
+  }
+
+  private startAuto() {
+    this.stopAuto();
+    if (this.carouselItems.length <= 1) return;
+    this.autoTimer = setInterval(() => this.next(), 4000);
+  }
+
+  private stopAuto() {
+    if (this.autoTimer) {
+      clearInterval(this.autoTimer);
+      this.autoTimer = null;
     }
   }
 

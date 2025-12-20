@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { ApiService } from '../../services/api.service';
 
 @Component({
   standalone: true,
@@ -8,11 +9,7 @@ import { RouterLink } from '@angular/router';
   templateUrl: './download.component.html',
 })
 export class DownloadComponent implements OnInit {
-  backendBaseUrl =
-    window.location.hostname === 'localhost' ||
-    window.location.hostname === '127.0.0.1'
-      ? 'http://localhost:5000'
-      : 'https://projectangular1.onrender.com';
+  constructor(private api: ApiService) {}
 
   ngOnInit(): void {
     this.applyStoredTheme();
@@ -24,6 +21,14 @@ export class DownloadComponent implements OnInit {
       'theme',
       document.body.classList.contains('dark') ? 'dark' : 'light',
     );
+  }
+
+  downloadWindows() {
+    window.location.href = `${this.api.apiBase}/download/windows`;
+  }
+
+  downloadAndroid() {
+    window.location.href = `${this.api.apiBase}/download/android`;
   }
 
   private applyStoredTheme() {

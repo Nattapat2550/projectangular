@@ -1,6 +1,19 @@
 // frontend/src/app/app.component.ts
-import { Component, AfterViewInit } from '@angular/core';
+import { Component, AfterViewInit, OnInit } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+
+function parseHashParams(hash: string): Record<string, string> {
+  const out: Record<string, string> = {};
+  const h = (hash || '').replace(/^#/, '');
+  if (!h) return out;
+
+  for (const part of h.split('&')) {
+    const [k, v] = part.split('=');
+    if (!k) continue;
+    out[decodeURIComponent(k)] = decodeURIComponent(v || '');
+  }
+  return out;
+}
 
 @Component({
   selector: 'app-root',
@@ -11,37 +24,40 @@ import { RouterOutlet } from '@angular/router';
   `,
   styleUrl: './app.component.css',
 })
-export class AppComponent implements AfterViewInit {
+export class AppComponent implements OnInit, AfterViewInit {
+  ngOnInit(): void {
+    // ✅ Theme persistence (same behavior as docker frontend)
+    const theme = localStorage.getItem('theme');
+    if (theme === 'dark') document.body.classList.add('dark');
+
+    // ✅ Token-in-hash fallback (used by some OAuth redirects / mobile)
+    // Example: #token=...&role=admin
+    const params = parseHashParams(window.location.hash);
+    if (params['token']) {
+      localStorage.setItem('auth_token', params['token']);
+      if (params['role']) localStorage.setItem('auth_role', params['role']);
+
+      // Remove token from URL for safety
+      history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
+  }
 
   ngAfterViewInit(): void {
-    if (typeof document === 'undefined') return;
+    // close dropdown when clicking outside
+    document.addEventListener('click', (event) => {
+      const menu = document.getElementById('userMenu');
+      if (!menu) return;
 
-    // ❌ เวอร์ชันเก่า: หา menu ตอนนี้ ถ้าไม่เจอ = return เลย → ไม่ทำงาน  
-    // const menu = document.getElementById('userMenu');
-    // if (!menu) return;
-
-    // ✅ เวอร์ชันใหม่: ผูก event ไว้ครั้งเดียว แล้วค่อยหา menu ตอนคลิกจริง
-    document.addEventListener('click', (event: MouseEvent) => {
       const target = event.target as Node | null;
       if (!target) return;
-
-      // หา element ทุกครั้งที่คลิก เผื่อมันถูกสร้างทีหลัง
-      const menu =
-        (document.getElementById('userMenu') as HTMLElement | null) ||
-        (document.querySelector('.user-menu') as HTMLElement | null);
-
-      if (!menu) {
-        // ถ้ายังไม่มี userMenu บนหน้านี้ ก็ไม่ต้องทำอะไร
-        return;
-      }
 
       const inside = menu.contains(target);
 
       if (inside) {
-        // คลิกในกล่อง userMenu → toggle open
+        // click inside → toggle open
         menu.classList.toggle('open');
       } else {
-        // คลิกนอก → ปิดเมนู
+        // click outside → close
         menu.classList.remove('open');
       }
     });

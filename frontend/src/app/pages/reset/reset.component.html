@@ -1,32 +1,32 @@
 <nav class="nav">
   <div class="brand">MySite</div>
   <div class="links">
-    <a routerLink="/">Index</a>
-    <a routerLink="/about">About</a>
-    <a routerLink="/contact">Contact</a>
-    <a routerLink="/download">Download</a>
-    <a routerLink="/login">Login</a>
-    <a routerLink="/register">Register</a>
+    <a routerLink="/" class="active">Home</a>
     <button id="themeToggle" (click)="toggleTheme()">🌓</button>
   </div>
 </nav>
 
-<main class="container">
-  <h2 *ngIf="mode === 'request'">Forgot Password</h2>
-  <h2 *ngIf="mode === 'reset'">Reset Password</h2>
+<main class="container small">
+  <h1 *ngIf="!isResetMode">Forgot password</h1>
+  <h1 *ngIf="isResetMode">Reset password</h1>
 
-  <form *ngIf="mode === 'request'" (ngSubmit)="sendResetLink()">
-    <p>กรอกอีเมลของคุณเพื่อขอ link reset password</p>
+  <!-- Request reset -->
+  <form *ngIf="!isResetMode" (ngSubmit)="requestReset()">
     <label>Email</label>
     <input type="email" [(ngModel)]="email" name="email" required />
+
     <button class="btn" type="submit" [disabled]="loading">
-      {{ loading ? 'Sending...' : 'Send Reset Link' }}
+      {{ loading ? 'Sending…' : 'Send reset link' }}
     </button>
+
+    <p class="notice" *ngIf="msg">{{ msg }}</p>
+
+    <p><a routerLink="/login">Back to login</a></p>
   </form>
 
-  <form *ngIf="mode === 'reset'" (ngSubmit)="resetPassword()">
-    <p>ตั้งรหัสผ่านใหม่</p>
-    <label>New Password</label>
+  <!-- Reset -->
+  <form *ngIf="isResetMode" (ngSubmit)="resetPassword()">
+    <label>New password</label>
     <input
       type="password"
       [(ngModel)]="newPassword"
@@ -34,18 +34,10 @@
       required
     />
 
-    <label>Confirm Password</label>
-    <input
-      type="password"
-      [(ngModel)]="confirmPassword"
-      name="confirmPassword"
-      required
-    />
-
     <button class="btn" type="submit" [disabled]="loading">
-      {{ loading ? 'Saving...' : 'Change Password' }}
+      {{ loading ? 'Saving…' : 'Reset password' }}
     </button>
-  </form>
 
-  <p class="muted" *ngIf="msg">{{ msg }}</p>
+    <p class="notice" *ngIf="msg">{{ msg }}</p>
+  </form>
 </main>
