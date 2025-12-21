@@ -17,22 +17,36 @@ export class UsersService {
   private pureApiUrl: string;
   private pureApiKey: string;
 
-  private readonly TIMEOUT_MS = 25000;
-  private readonly RETRIES = 3;
+  // Timeouts / retries
+  private readonly TIMEOUT_MS = 45000; // allow cold start
+  private readonly RETRIES = 5;
   private readonly BASE_DELAY_MS = 1200;
+
+  // health caching
+  private lastHealthOkAt = 0;
+  private lastHealthFailAt = 0;
 
   constructor(private readonly config: ConfigService) {
     const rawUrl = (this.config.get<string>('PURE_API_BASE_URL') || '').trim();
     const rawKey = (this.config.get<string>('PURE_API_KEY') || '').trim();
+    const nodeEnv = (this.config.get<string>('NODE_ENV') || 'development').trim();
 
-    // ✅ normalize URL:
+    // Normalize URL:
     // - remove trailing slashes
-    // - remove trailing "/api" or "/api/"
+    // - remove trailing "/api" if user accidentally set it
     let normalized = rawUrl.replace(/\/+$/, '');
     if (normalized.endsWith('/api')) normalized = normalized.slice(0, -4);
 
     this.pureApiUrl = normalized;
     this.pureApiKey = rawKey;
+
+    // Keep Pure API warm on Render (helps avoid 503 on first register)
+    if (nodeEnv === 'production') {
+      this.ensureReady().catch(() => {});
+      setInterval(() => {
+        this.ensureReady().catch(() => {});
+      }, 5 * 60 * 1000);
+    }
   }
 
   private sleep(ms: number) {
@@ -43,14 +57,14 @@ export class UsersService {
     const status = error?.response?.status;
     if (status === 502 || status === 503 || status === 504) return true;
 
-    const code = (error?.code || '').toString();
+    const code = String(error?.code || '');
     if (
       ['ECONNRESET', 'ECONNREFUSED', 'ENOTFOUND', 'ETIMEDOUT', 'EAI_AGAIN'].includes(code)
     ) {
       return true;
     }
 
-    const msg = (error?.message || '').toLowerCase();
+    const msg = String(error?.message || '').toLowerCase();
     if (
       msg.includes('timeout') ||
       msg.includes('socket hang up') ||
@@ -59,7 +73,6 @@ export class UsersService {
     ) {
       return true;
     }
-
     return false;
   }
 
@@ -70,9 +83,15 @@ export class UsersService {
       try {
         const res = await axios({
           timeout: this.TIMEOUT_MS,
+          validateStatus: () => true, // handle ourselves
           ...cfg,
         });
-        return res as T;
+
+        if (res.status >= 200 && res.status < 300) return res as any;
+
+        const err: any = new Error(`HTTP ${res.status}`);
+        err.response = res;
+        throw err;
       } catch (err: any) {
         lastErr = err;
 
@@ -102,10 +121,53 @@ export class UsersService {
     }
   }
 
+  /**
+   * Ensure Pure API is reachable (helps avoid 503 on cold start).
+   * Uses /health (no api key needed) and caches OK state for 30s.
+   */
+  async ensureReady(): Promise<void> {
+    this.ensurePureApiConfigured();
+
+    const now = Date.now();
+
+    if (now - this.lastHealthOkAt < 30_000) return;
+
+    if (now - this.lastHealthFailAt < 3_000) {
+      await this.sleep(500);
+    }
+
+    const url = `${this.pureApiUrl}/health`;
+
+    try {
+      const res: any = await this.axiosWithRetry({
+        method: 'GET',
+        url,
+        headers: { 'User-Agent': 'projectangular-backend' },
+      });
+
+      if (res?.data?.ok === true) {
+        this.lastHealthOkAt = Date.now();
+        return;
+      }
+
+      throw new Error('Pure API health check failed');
+    } catch (e: any) {
+      this.lastHealthFailAt = Date.now();
+      if (e instanceof ServiceUnavailableException) throw e;
+      throw new ServiceUnavailableException(
+        'Pure API is not reachable right now. Please try again in a moment.',
+      );
+    }
+  }
+
   private async callApi(method: 'GET' | 'POST', path: string, data?: any) {
     this.ensurePureApiConfigured();
 
+    // Warmup before internal call
+    await this.ensureReady();
+
     const url = `${this.pureApiUrl}/api/internal${path}`;
+
     try {
       const res: any = await this.axiosWithRetry({
         method,
@@ -118,17 +180,14 @@ export class UsersService {
     } catch (error: any) {
       const status = error?.response?.status;
 
-      // ✅ key mismatch / forbidden
       if (status === 401 || status === 403) {
         throw new ServiceUnavailableException(
           'Pure API authentication failed. Please verify PURE_API_KEY is correct.',
         );
       }
 
-      // ✅ endpoint not found
       if (status === 404) return null;
 
-      // ✅ already a clean 503 message
       if (error instanceof ServiceUnavailableException) throw error;
 
       console.error(`Error calling Pure API (${url}):`, error?.response?.data || error?.message);
@@ -192,6 +251,7 @@ export class UsersService {
 
   async validateAndConsumeCode(email: string, code: string) {
     this.ensurePureApiConfigured();
+    await this.ensureReady();
 
     try {
       const res: any = await this.axiosWithRetry({

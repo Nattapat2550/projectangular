@@ -39,17 +39,18 @@ export class AuthService {
   }
 
   signToken(user: any) {
-    return jwt.sign(
-      { id: user.id, role: user.role },
-      this.jwtSecret,
-      { expiresIn: '30d' },
-    );
+    return jwt.sign({ id: user.id, role: user.role }, this.jwtSecret, {
+      expiresIn: '30d',
+    });
   }
 
   async register(email: string) {
     if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
       throw new BadRequestException('Invalid email');
     }
+
+    // ✅ Warmup pure-api first
+    await this.users.ensureReady();
 
     const existing = await this.users.findUserByEmail(email);
     if (existing && existing.is_email_verified) {
@@ -58,8 +59,6 @@ export class AuthService {
 
     const user = existing || (await this.users.createUserByEmail(email));
     if (!user || !user.id) {
-      // กัน error "Cannot read properties of null (reading 'id')"
-      // สาเหตุหลัก: Pure API ไม่ตอบ/ตื่นไม่ทัน หรือ ENV (PURE_API_BASE_URL / PURE_API_KEY) ผิด
       throw new ServiceUnavailableException(
         'Unable to create user right now. Please try again in a moment.',
       );
@@ -132,7 +131,6 @@ export class AuthService {
       expiresAt,
     );
     if (!user) {
-      // เพื่อไม่ให้บอกว่า email นี้ไม่มีอยู่
       return { ok: true };
     }
 
@@ -163,8 +161,6 @@ export class AuthService {
     return { ok: true };
   }
 
-  // GOOGLE WEB FLOW
-
   getGoogleAuthUrl() {
     if (!this.oauth2ClientWeb) {
       throw new BadRequestException('Google OAuth not configured');
@@ -172,13 +168,12 @@ export class AuthService {
     const callbackUri = this.config.get<string>('GOOGLE_CALLBACK_URI');
     const scopes = ['openid', 'email', 'profile'];
 
-    const url = this.oauth2ClientWeb.generateAuthUrl({
+    return this.oauth2ClientWeb.generateAuthUrl({
       redirect_uri: callbackUri,
       access_type: 'offline',
       prompt: 'consent',
       scope: scopes,
     });
-    return url;
   }
 
   async handleGoogleCallback(code: string) {
