@@ -17,8 +17,8 @@ export class UsersService {
   private pureApiUrl: string;
   private pureApiKey: string;
 
-  // Timeouts / retries
-  private readonly TIMEOUT_MS = 45000; // allow cold start
+  // Timeouts / retries (Render cold start friendly)
+  private readonly TIMEOUT_MS = 45000;
   private readonly RETRIES = 5;
   private readonly BASE_DELAY_MS = 1200;
 
@@ -31,21 +31,19 @@ export class UsersService {
     const rawKey = (this.config.get<string>('PURE_API_KEY') || '').trim();
     const nodeEnv = (this.config.get<string>('NODE_ENV') || 'development').trim();
 
-    // Normalize URL:
+    // ✅ normalize URL:
     // - remove trailing slashes
-    // - remove trailing "/api" if user accidentally set it
+    // - remove trailing "/api" if someone mistakenly set it
     let normalized = rawUrl.replace(/\/+$/, '');
     if (normalized.endsWith('/api')) normalized = normalized.slice(0, -4);
 
     this.pureApiUrl = normalized;
     this.pureApiKey = rawKey;
 
-    // Keep Pure API warm on Render (helps avoid 503 on first register)
+    // ✅ keep warm on production
     if (nodeEnv === 'production') {
       this.ensureReady().catch(() => {});
-      setInterval(() => {
-        this.ensureReady().catch(() => {});
-      }, 5 * 60 * 1000);
+      setInterval(() => this.ensureReady().catch(() => {}), 5 * 60 * 1000);
     }
   }
 
@@ -122,14 +120,13 @@ export class UsersService {
   }
 
   /**
-   * Ensure Pure API is reachable (helps avoid 503 on cold start).
-   * Uses /health (no api key needed) and caches OK state for 30s.
+   * ✅ Ensure Pure API is reachable (helps avoid cold start failures).
+   * Uses /health (no api key) and caches OK for 30s.
    */
   async ensureReady(): Promise<void> {
     this.ensurePureApiConfigured();
 
     const now = Date.now();
-
     if (now - this.lastHealthOkAt < 30_000) return;
 
     if (now - this.lastHealthFailAt < 3_000) {
@@ -160,10 +157,23 @@ export class UsersService {
     }
   }
 
+  /**
+   * ✅ IMPORTANT FIX:
+   * Pure API internal endpoints return JSON directly (UserLite / object),
+   * not { data: ... }.
+   * So we support BOTH:
+   * - if response is { data: X } => return X
+   * - else return response directly
+   */
+  private unwrapPureApiResponse(payload: any) {
+    if (payload && typeof payload === 'object' && Object.prototype.hasOwnProperty.call(payload, 'data')) {
+      return payload.data ?? null;
+    }
+    return payload ?? null;
+  }
+
   private async callApi(method: 'GET' | 'POST', path: string, data?: any) {
     this.ensurePureApiConfigured();
-
-    // Warmup before internal call
     await this.ensureReady();
 
     const url = `${this.pureApiUrl}/api/internal${path}`;
@@ -176,7 +186,8 @@ export class UsersService {
         headers: { 'x-api-key': this.pureApiKey },
       });
 
-      return res.data?.data ?? null;
+      // ✅ FIX HERE
+      return this.unwrapPureApiResponse(res.data);
     } catch (error: any) {
       const status = error?.response?.status;
 
@@ -195,6 +206,7 @@ export class UsersService {
     }
   }
 
+  // --- Core user operations (Pure API internal) ---
   async createUserByEmail(email: string) {
     return this.callApi('POST', '/create-user-email', { email });
   }
@@ -208,10 +220,12 @@ export class UsersService {
   }
 
   async findUserByOAuth(provider: string, oauthId: string) {
+    // pure-api expects camelCase oauthId (serde rename_all = camelCase)
     return this.callApi('POST', '/find-user', { provider, oauthId });
   }
 
   async setOAuthUser(input: SetOAuthUserInput) {
+    // pure-api expects: email, provider, oauthId, pictureUrl, name (camelCase)
     return this.callApi('POST', '/set-oauth-user', {
       email: input.email,
       provider: input.provider,
@@ -261,6 +275,7 @@ export class UsersService {
         headers: { 'x-api-key': this.pureApiKey },
       });
 
+      // verify-code returns direct JSON (not wrapped)
       return res.data;
     } catch (error: any) {
       if (error instanceof ServiceUnavailableException) throw error;
