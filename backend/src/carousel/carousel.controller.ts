@@ -7,6 +7,7 @@ export class CarouselController {
 
   @Get()
   async list() {
-    return this.service.listCarouselItems();
+    // Never return null to the frontend
+    return (await this.service.listCarouselItems()) || [];
   }
 }

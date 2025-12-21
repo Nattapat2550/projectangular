@@ -9,7 +9,8 @@ export class HomepageController {
 
   @Get()
   async getAll() {
-    return this.service.getHomepageContent();
+    // Never return null to the frontend
+    return (await this.service.getHomepageContent()) || [];
   }
 
   @UseGuards(JwtAuthGuard, AdminGuard)
