@@ -2,10 +2,11 @@ import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config';
 import { google } from 'googleapis';
 
-// ตรวจสอบว่าได้ลง nodemailer หรือยัง: npm i nodemailer
+// ใช้ require ตามแบบ test12 เพื่อความชัวร์เรื่อง library
 const MailComposer = require('nodemailer/lib/mail-composer');
 
-type SendEmailInput = {
+// Interface input คงไว้เพื่อให้ NestJS เรียกใช้ได้เหมือนเดิม
+export type SendEmailInput = {
   to: string;
   subject: string;
   text?: string;
@@ -19,67 +20,82 @@ export class EmailService {
   private gmail: any;
 
   constructor(private readonly config: ConfigService) {
-    // ดึงค่า Config มาเตรียมไว้
     const clientId = this.config.get<string>('GOOGLE_CLIENT_ID');
     const clientSecret = this.config.get<string>('GOOGLE_CLIENT_SECRET');
     const redirectUri = this.config.get<string>('GOOGLE_REDIRECT_URI');
     const refreshToken = this.config.get<string>('REFRESH_TOKEN');
 
-    if (clientId && clientSecret && redirectUri && refreshToken) {
-      this.oauth2Client = new google.auth.OAuth2(clientId, clientSecret, redirectUri);
-      this.oauth2Client.setCredentials({ refresh_token: refreshToken });
-      this.gmail = google.gmail({ version: 'v1', auth: this.oauth2Client });
+    // เช็คว่า Config ครบไหม ถ้าไม่ครบให้ Log เตือน
+    if (!clientId || !clientSecret || !redirectUri || !refreshToken) {
+      this.logger.error('[MAIL] Missing Google OAuth configuration in .env');
+      return;
     }
+
+    this.oauth2Client = new google.auth.OAuth2(clientId, clientSecret, redirectUri);
+    this.oauth2Client.setCredentials({ refresh_token: refreshToken });
+
+    this.gmail = google.gmail({ version: 'v1', auth: this.oauth2Client });
   }
 
   async sendEmail(input: SendEmailInput): Promise<{ id: string }> {
-    // 1. เช็คว่าปิดการส่งเมลไว้หรือไม่
-    const isEmailDisabled = this.config.get<boolean>('EMAIL_DISABLE');
-    if (isEmailDisabled) {
-      this.logger.warn('[MAIL] Email is disabled in .env');
+    // 1. ตรวจสอบว่าปิด Email ไว้หรือไม่ (สำคัญมาก! เช็คไฟล์ .env ดีๆ)
+    // ใน env.config.ts คุณแปลงเป็น boolean แล้ว ดังนั้นเรียกใช้ได้เลย
+    if (this.config.get('EMAIL_DISABLE') === true) {
+      this.logger.warn('[MAIL] Email sending is DISABLED in .env');
       return { id: 'disabled' };
     }
 
     if (!this.gmail) {
-      throw new ServiceUnavailableException('Gmail API not configured');
+      throw new ServiceUnavailableException('Gmail service not initialized (Check .env)');
+    }
+
+    const senderEmail = this.config.get<string>('SENDER_EMAIL');
+    if (!senderEmail) {
+      throw new ServiceUnavailableException('SENDER_EMAIL is missing in .env');
     }
 
     try {
-      // 2. ตั้งค่า Mail ให้เหมือน test12 มากที่สุด
+      // 2. สร้าง Mail Options แบบเดียวกับ test12 เป๊ะๆ
+      // Outlook ชอบให้มี html ด้วย ถ้าไม่มีให้ใช้ text แทน
       const mailOptions = {
         to: input.to,
         subject: input.subject,
-        text: input.text || '',
-        html: input.html, // Outlook จะรับเมลได้ดีขึ้นถ้ามีทั้ง text และ html
-        from: this.config.get<string>('SENDER_EMAIL'), // ใช้จาก .env ตรงๆ เหมือน test12
+        text: input.text || '', // บังคับมี text
+        html: input.html || input.text || '', // ถ้ามี html ให้ใส่ ถ้าไม่มีให้เอา text มาใส่แทน
+        from: senderEmail, // ใส่ Email ตรงๆ เลย ไม่ต้องมีชื่อ <...>
       };
 
+      // 3. Compile Message (Logic เดียวกับ test12)
       const mail = new MailComposer(mailOptions);
-      const message: Buffer = await new Promise((resolve, reject) => {
+      const message = await new Promise<Buffer>((resolve, reject) => {
         mail.compile().build((err: any, msg: Buffer) => {
           if (err) reject(err);
           else resolve(msg);
         });
       });
 
-      // 3. Encode และส่งผ่าน Gmail API
-      const encodedMessage = Buffer.from(message)
+      // 4. Encode base64url (Logic เดียวกับ test12)
+      const encodedMessage = message
         .toString('base64')
         .replace(/\+/g, '-')
         .replace(/\//g, '_')
         .replace(/=+$/, '');
 
+      // 5. ส่งผ่าน Gmail API
       const res = await this.gmail.users.messages.send({
         userId: 'me',
-        requestBody: { raw: encodedMessage },
+        requestBody: {
+          raw: encodedMessage,
+        },
       });
 
-      this.logger.log(`[MAIL] Sent to ${input.to} successfully`);
+      this.logger.log(`[MAIL] Sent successfully to: ${input.to} (ID: ${res.data.id})`);
       return { id: res.data.id };
 
     } catch (err: any) {
-      this.logger.error(`[MAIL] Error: ${err.message}`);
-      throw err;
+      this.logger.error(`[MAIL] Failed to send: ${err.message}`, err.stack);
+      // โยน Error ออกไปเพื่อให้ Controller รู้ว่าส่งไม่ผ่าน
+      throw new ServiceUnavailableException(`Email failed: ${err.message}`);
     }
   }
 }
