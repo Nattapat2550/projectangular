@@ -1,7 +1,4 @@
-import {
-  Injectable,
-  ServiceUnavailableException,
-} from '@nestjs/common';
+import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 
@@ -20,14 +17,22 @@ export class UsersService {
   private pureApiUrl: string;
   private pureApiKey: string;
 
-  // ปรับได้ตามต้องการ
   private readonly TIMEOUT_MS = 25000;
   private readonly RETRIES = 3;
   private readonly BASE_DELAY_MS = 1200;
 
   constructor(private readonly config: ConfigService) {
-    this.pureApiUrl = this.config.get<string>('PURE_API_BASE_URL') || '';
-    this.pureApiKey = this.config.get<string>('PURE_API_KEY') || '';
+    const rawUrl = (this.config.get<string>('PURE_API_BASE_URL') || '').trim();
+    const rawKey = (this.config.get<string>('PURE_API_KEY') || '').trim();
+
+    // ✅ normalize URL:
+    // - remove trailing slashes
+    // - remove trailing "/api" or "/api/"
+    let normalized = rawUrl.replace(/\/+$/, '');
+    if (normalized.endsWith('/api')) normalized = normalized.slice(0, -4);
+
+    this.pureApiUrl = normalized;
+    this.pureApiKey = rawKey;
   }
 
   private sleep(ms: number) {
@@ -39,7 +44,9 @@ export class UsersService {
     if (status === 502 || status === 503 || status === 504) return true;
 
     const code = (error?.code || '').toString();
-    if (['ECONNRESET', 'ECONNREFUSED', 'ENOTFOUND', 'ETIMEDOUT', 'EAI_AGAIN'].includes(code)) {
+    if (
+      ['ECONNRESET', 'ECONNREFUSED', 'ENOTFOUND', 'ETIMEDOUT', 'EAI_AGAIN'].includes(code)
+    ) {
       return true;
     }
 
@@ -75,7 +82,9 @@ export class UsersService {
         }
 
         if (this.isTransientError(err)) {
-          throw new ServiceUnavailableException('Pure API is waking up. Please try again in a moment.');
+          throw new ServiceUnavailableException(
+            'Pure API is waking up or temporarily unavailable. Please try again in a moment.',
+          );
         }
 
         throw err;
@@ -85,28 +94,44 @@ export class UsersService {
     throw lastErr;
   }
 
-  // Helper สำหรับยิง Request ไปยัง Pure API
-  private async callApi(method: 'GET' | 'POST', path: string, data?: any) {
+  private ensurePureApiConfigured() {
     if (!this.pureApiUrl || !this.pureApiKey) {
       throw new ServiceUnavailableException(
-        'Pure API is not configured. Please set PURE_API_BASE_URL and PURE_API_KEY in your environment variables.',
+        'Pure API is not configured. Please set PURE_API_BASE_URL and PURE_API_KEY in Render environment variables.',
       );
     }
+  }
 
+  private async callApi(method: 'GET' | 'POST', path: string, data?: any) {
+    this.ensurePureApiConfigured();
+
+    const url = `${this.pureApiUrl}/api/internal${path}`;
     try {
       const res: any = await this.axiosWithRetry({
         method,
-        url: `${this.pureApiUrl}/api/internal${path}`,
+        url,
         data,
         headers: { 'x-api-key': this.pureApiKey },
       });
 
       return res.data?.data ?? null;
     } catch (error: any) {
-      if (error?.response?.status === 404) return null;
+      const status = error?.response?.status;
+
+      // ✅ key mismatch / forbidden
+      if (status === 401 || status === 403) {
+        throw new ServiceUnavailableException(
+          'Pure API authentication failed. Please verify PURE_API_KEY is correct.',
+        );
+      }
+
+      // ✅ endpoint not found
+      if (status === 404) return null;
+
+      // ✅ already a clean 503 message
       if (error instanceof ServiceUnavailableException) throw error;
 
-      console.error(`Error calling Pure API (${path}):`, error.response?.data || error.message);
+      console.error(`Error calling Pure API (${url}):`, error?.response?.data || error?.message);
       return null;
     }
   }
@@ -124,7 +149,6 @@ export class UsersService {
   }
 
   async findUserByOAuth(provider: string, oauthId: string) {
-    // pure-api schema: { provider, oauthId } (camelCase)
     return this.callApi('POST', '/find-user', { provider, oauthId });
   }
 
@@ -146,10 +170,7 @@ export class UsersService {
     return this.callApi('POST', '/admin/users/update', { id, ...data });
   }
 
-  async updateProfile(
-    userId: number,
-    data: { username?: string; profilePictureUrl?: string },
-  ) {
+  async updateProfile(userId: number, data: { username?: string; profilePictureUrl?: string }) {
     return this.callApi('POST', '/admin/users/update', {
       id: userId,
       username: data.username,
@@ -170,6 +191,8 @@ export class UsersService {
   }
 
   async validateAndConsumeCode(email: string, code: string) {
+    this.ensurePureApiConfigured();
+
     try {
       const res: any = await this.axiosWithRetry({
         method: 'POST',
