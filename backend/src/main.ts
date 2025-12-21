@@ -31,6 +31,15 @@ async function bootstrap() {
 
   app.use(compression());
 
+  // ✅ Render/Reverse-proxy จะส่ง X-Forwarded-* headers มา
+  // ถ้าไม่ set trust proxy, express-rate-limit จะ throw ERR_ERL_UNEXPECTED_X_FORWARDED_FOR
+  // และการหา IP ผู้ใช้จะคลาดเคลื่อน
+  const expressApp = app.getHttpAdapter().getInstance();
+  if (nodeEnv === 'production' && typeof expressApp?.set === 'function') {
+    // trust first proxy hop (recommended for Render/Heroku/Cloudflare style proxies)
+    expressApp.set('trust proxy', 1);
+  }
+
   app.use(
     rateLimit({
       windowMs: 15 * 60 * 1000,

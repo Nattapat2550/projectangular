@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  UnauthorizedException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../users/users.service';
 import { EmailService } from '../email/email.service';
@@ -52,6 +57,14 @@ export class AuthService {
     }
 
     const user = existing || (await this.users.createUserByEmail(email));
+    if (!user || !user.id) {
+      // กัน error "Cannot read properties of null (reading 'id')"
+      // สาเหตุหลัก: Pure API ไม่ตอบ/ตื่นไม่ทัน หรือ ENV (PURE_API_BASE_URL / PURE_API_KEY) ผิด
+      throw new ServiceUnavailableException(
+        'Unable to create user right now. Please try again in a moment.',
+      );
+    }
+
     const code = this.generateSixDigitCode();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
@@ -195,6 +208,12 @@ export class AuthService {
       pictureUrl: info.picture || undefined,
       name: info.name || undefined,
     });
+
+    if (!user || !user.id) {
+      throw new ServiceUnavailableException(
+        'Google login is temporarily unavailable. Please try again in a moment.',
+      );
+    }
 
     return user;
   }

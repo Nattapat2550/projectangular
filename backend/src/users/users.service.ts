@@ -87,6 +87,12 @@ export class UsersService {
 
   // Helper สำหรับยิง Request ไปยัง Pure API
   private async callApi(method: 'GET' | 'POST', path: string, data?: any) {
+    if (!this.pureApiUrl || !this.pureApiKey) {
+      throw new ServiceUnavailableException(
+        'Pure API is not configured. Please set PURE_API_BASE_URL and PURE_API_KEY in your environment variables.',
+      );
+    }
+
     try {
       const res: any = await this.axiosWithRetry({
         method,
@@ -122,9 +128,7 @@ export class UsersService {
     return this.callApi('POST', '/find-user', { provider, oauthId });
   }
 
-  // ✅ เพิ่มให้หาย error: Property 'setOAuthUser' does not exist
   async setOAuthUser(input: SetOAuthUserInput) {
-    // pure-api internal schema ใช้ camelCase: oauthId / pictureUrl
     return this.callApi('POST', '/set-oauth-user', {
       email: input.email,
       provider: input.provider,
@@ -138,12 +142,10 @@ export class UsersService {
     return this.callApi('POST', '/set-username-password', { email, username, password });
   }
 
-  // ใช้สำหรับหน้า Admin
   async adminUpdateUser(id: number, data: any) {
     return this.callApi('POST', '/admin/users/update', { id, ...data });
   }
 
-  // ใช้สำหรับ User ทั่วไปแก้ไขโปรไฟล์ตัวเอง
   async updateProfile(
     userId: number,
     data: { username?: string; profilePictureUrl?: string },
@@ -156,7 +158,6 @@ export class UsersService {
   }
 
   async deleteUser(userId: number) {
-    // ⚠️ ต้องมี endpoint นี้ใน pure-api internal ด้วย (ถ้ายังไม่มีจะ 404)
     await this.callApi('POST', '/delete-user', { id: userId });
   }
 
