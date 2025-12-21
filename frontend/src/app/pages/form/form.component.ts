@@ -1,13 +1,12 @@
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { NgIf } from '@angular/common';
 import { ApiService } from '../../services/api.service';
 
 @Component({
   standalone: true,
   selector: 'app-form',
-  imports: [FormsModule, RouterLink, NgIf],
+  imports: [FormsModule, RouterLink],
   templateUrl: './form.component.html',
 })
 export class FormComponent implements OnInit {

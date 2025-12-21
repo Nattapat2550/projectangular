@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { NgForOf, NgIf } from '@angular/common';
+import { NgForOf} from '@angular/common';
 import { ApiService } from '../../services/api.service';
 
 type Role = 'user' | 'admin';
@@ -25,7 +25,7 @@ interface CarouselItem {
 @Component({
   standalone: true,
   selector: 'app-admin',
-  imports: [RouterLink, FormsModule, NgIf, NgForOf],
+  imports: [RouterLink, FormsModule, NgForOf],
   templateUrl: './admin.component.html',
 })
 export class AdminComponent implements OnInit {

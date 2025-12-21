@@ -1,13 +1,12 @@
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { NgIf } from '@angular/common';
 import { ApiService } from '../../services/api.service';
 
 @Component({
   standalone: true,
   selector: 'app-check',
-  imports: [FormsModule, RouterLink, NgIf],
+  imports: [FormsModule, RouterLink],
   templateUrl: './check.component.html',
 })
 export class CheckComponent implements OnInit {
