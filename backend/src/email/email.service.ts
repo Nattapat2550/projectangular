@@ -1,91 +1,131 @@
 import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { google } from 'googleapis';
+import { google, gmail_v1 } from 'googleapis';
+import { randomUUID } from 'crypto';
 
-// ใช้ MailComposer แบบเดียวกับ logins/backend/utils/gmail.js
+// ใช้ MailComposer เพื่อให้ได้ raw RFC822 ที่ Outlook/Hotmail รับได้ดี
+// (แนวเดียวกับ docker/backend/utils/gmail.js)
 const MailComposer = require('nodemailer/lib/mail-composer');
 
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
-  private gmail: any;
+  private gmail?: gmail_v1.Gmail;
+  private resolvedSender?: string;
 
   constructor(private readonly config: ConfigService) {
-    // 1. ดึง Config มาเตรียมไว้
-    const clientId = this.config.get<string>('GOOGLE_CLIENT_ID');
-    const clientSecret = this.config.get<string>('GOOGLE_CLIENT_SECRET');
-    const redirectUri = this.config.get<string>('GOOGLE_REDIRECT_URI');
-    const refreshToken = this.config.get<string>('REFRESH_TOKEN');
+    const clientId = (this.config.get<string>('GOOGLE_CLIENT_ID') || '').trim();
+    const clientSecret = (this.config.get<string>('GOOGLE_CLIENT_SECRET') || '').trim();
+    const redirectUri = (this.config.get<string>('GOOGLE_REDIRECT_URI') || '').trim();
+    const refreshToken = (this.config.get<string>('REFRESH_TOKEN') || '').trim();
 
-    // ตรวจสอบว่ามีค่าครบไหม
     if (!clientId || !clientSecret || !redirectUri || !refreshToken) {
-      this.logger.error('[MAIL] Missing OAuth Config in .env');
+      this.logger.error(
+        '[MAIL] Missing OAuth config: GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET/GOOGLE_REDIRECT_URI/REFRESH_TOKEN',
+      );
       return;
     }
 
-    // 2. สร้าง OAuth2 Client
     const oauth2Client = new google.auth.OAuth2(clientId, clientSecret, redirectUri);
     oauth2Client.setCredentials({ refresh_token: refreshToken });
 
     this.gmail = google.gmail({ version: 'v1', auth: oauth2Client });
   }
 
+  private async getSenderEmail(): Promise<string> {
+    if (this.resolvedSender) return this.resolvedSender;
+
+    const fromEnv = (this.config.get<string>('SENDER_EMAIL') || '').trim();
+    if (fromEnv && /^\S+@\S+\.\S+$/.test(fromEnv)) {
+      this.resolvedSender = fromEnv;
+      return fromEnv;
+    }
+
+    if (!this.gmail) {
+      throw new Error('Gmail service is not initialized');
+    }
+
+    const profile = await this.gmail.users.getProfile({ userId: 'me' });
+    const addr = (profile.data.emailAddress || '').trim();
+
+    if (!addr) {
+      throw new Error('Unable to resolve sender email. Please set SENDER_EMAIL in env.');
+    }
+
+    this.resolvedSender = addr;
+    return addr;
+  }
+
   async sendEmail(input: { to: string; subject: string; text: string }) {
     try {
-      // ตรวจสอบการปิดระบบเมล
-      const isEmailDisabled = this.config.get('EMAIL_DISABLE') === 'true' || this.config.get('EMAIL_DISABLE') === true;
-      if (isEmailDisabled) {
-        this.logger.warn('[MAIL] Sending is disabled via .env');
-        return;
-      }
-
-      // ดึง Sender Email จาก .env (ต้องตรงกับเจ้าของ Refresh Token)
-      const sender = this.config.get<string>('SENDER_EMAIL');
-      
-      if (!input.to || !input.subject || !input.text) {
-        throw new Error("sendEmail requires (to, subject, text)");
+      // ✅ ถ้า disable ให้ล้มชัดเจน (ไม่ให้ API ตอบ ok แต่ไม่ส่งเมล)
+      if (this.config.get<boolean>('EMAIL_DISABLE') === true) {
+        throw new ServiceUnavailableException('Email sending is disabled (EMAIL_DISABLE=true).');
       }
 
       if (!this.gmail) {
-        throw new Error("Gmail service is not initialized");
+        throw new Error('Gmail service is not initialized');
       }
 
-      // 3. สร้าง MailComposer (Text ล้วน ไม่มี HTML เพื่อลดโอกาส Spam)
+      const to = (input?.to || '').trim();
+      const subject = (input?.subject || '').trim();
+      const text = (input?.text || '').trim();
+
+      if (!to || !subject || !text) {
+        throw new Error('sendEmail requires (to, subject, text)');
+      }
+
+      const sender = await this.getSenderEmail();
+
+      // ใส่ ref id ช่วย trace + กัน header ซ้ำ ๆ
+      const refId = (() => {
+        try {
+          return randomUUID();
+        } catch {
+          return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+        }
+      })();
+
       const mail = new MailComposer({
-        to: input.to,
-        subject: input.subject,
-        text: input.text,
-        from: sender, // ใส่ Email โดดๆ ไม่ต้องใส่ชื่อ <email>
+        to,
+        subject,
+        text,
+        from: sender, // ต้องตรงกับเจ้าของ Refresh Token เพื่อให้ Outlook ไม่ drop
+        replyTo: sender,
+        headers: {
+          'X-Entity-Ref-ID': refId,
+          'X-Mailer': 'projectangular1',
+        },
       });
 
-      // 4. Compile & Build
-      const message = await new Promise<Buffer>((resolve, reject) => {
-        mail.compile().build((err, msg) => {
-          if (err) reject(err);
-          else resolve(msg);
-        });
+      const message: Buffer = await new Promise((resolve, reject) => {
+        mail.compile().build((err: any, msg: Buffer) => (err ? reject(err) : resolve(msg)));
       });
 
-      // 5. Encode Base64
-      const encoded = message
+      // Base64URL ตาม Gmail API
+      const encoded = Buffer.from(message)
         .toString('base64')
         .replace(/\+/g, '-')
         .replace(/\//g, '_')
         .replace(/=+$/, '');
 
-      // 6. ส่งผ่าน Gmail API
       const res = await this.gmail.users.messages.send({
         userId: 'me',
         requestBody: { raw: encoded },
       });
 
-      this.logger.log(`[MAIL] Sent successfully to=${input.to}, ID=${res.data.id}`);
+      this.logger.log(`[MAIL] Sent to=${to}, id=${res.data.id}, ref=${refId}`);
       return res.data;
-
     } catch (error: any) {
-      this.logger.error(`[MAIL] Failed to send email: ${error.message}`);
-      // สำคัญ: ต้อง throw error เพื่อให้ AuthService รู้ว่าส่งไม่ผ่าน
-      throw new ServiceUnavailableException(`Email failed: ${error.message}`);
+      const msg = error?.message || String(error);
+
+      if (error instanceof ServiceUnavailableException) {
+        this.logger.warn(`[MAIL] ${msg}`);
+        throw error;
+      }
+
+      this.logger.error(`[MAIL] Failed to send email: ${msg}`);
+      throw new ServiceUnavailableException(`Email failed: ${msg}`);
     }
   }
 }

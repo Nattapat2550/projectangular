@@ -69,12 +69,12 @@ export class AuthService {
 
     await this.users.storeVerificationCode(user.id, code, expiresAt);
 
-    // ❌ เอา HTML ออก เหลือแค่ Text ล้วน
     await this.email.sendEmail({
       to: email,
       subject: 'Your verification code',
-      text: `Your code is ${code}. It expires in 10 minutes.`,
+      text: `Your verification code is: ${code}\n\nThis code expires in 10 minutes.\n\nIf you didn't request this, you can ignore this email.`,
     });
+
 
     return { ok: true };
   }
@@ -139,12 +139,12 @@ export class AuthService {
       rawToken,
     )}`;
 
-    // ❌ เอา HTML ออก เหลือแค่ Text ล้วน
     await this.email.sendEmail({
       to: email,
       subject: 'Password reset',
-      text: `Click here to reset your password: ${resetLink}`,
+      text: `Reset your password using this link (valid 30 minutes):\n\n${resetLink}\n\nIf you didn't request this, you can ignore this email.`,
     });
+
 
     return { ok: true };
   }
