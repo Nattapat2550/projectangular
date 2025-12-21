@@ -1,43 +1,31 @@
 <nav class="nav">
   <div class="brand">MySite</div>
   <div class="links">
-    <a routerLink="/" class="active">Home</a>
+    <a routerLink="/">Home</a>
     <button id="themeToggle" (click)="toggleTheme()">🌓</button>
   </div>
 </nav>
 
-<main class="container small">
-  <h1 *ngIf="!isResetMode">Forgot password</h1>
-  <h1 *ngIf="isResetMode">Reset password</h1>
+<main class="container">
+  <h2>Reset Password</h2>
 
-  <!-- Request reset -->
-  <form *ngIf="!isResetMode" (ngSubmit)="requestReset()">
-    <label>Email</label>
-    <input type="email" [(ngModel)]="email" name="email" required />
+  <!-- Request reset link -->
+  <div id="requestBox" *ngIf="!token">
+    <form (ngSubmit)="requestReset()">
+      <label>Email</label>
+      <input type="email" [(ngModel)]="email" name="email" required />
+      <button class="btn" type="submit" [disabled]="loading">{{ loading ? 'Sending...' : 'Send reset link' }}</button>
+    </form>
+  </div>
 
-    <button class="btn" type="submit" [disabled]="loading">
-      {{ loading ? 'Sending…' : 'Send reset link' }}
-    </button>
+  <!-- Perform reset -->
+  <div id="resetBox" *ngIf="token">
+    <form (ngSubmit)="doReset()">
+      <label>New password</label>
+      <input type="password" [(ngModel)]="newPassword" name="newPassword" minlength="8" required />
+      <button class="btn" type="submit" [disabled]="loading">{{ loading ? 'Saving...' : 'Reset password' }}</button>
+    </form>
+  </div>
 
-    <p class="notice" *ngIf="msg">{{ msg }}</p>
-
-    <p><a routerLink="/login">Back to login</a></p>
-  </form>
-
-  <!-- Reset -->
-  <form *ngIf="isResetMode" (ngSubmit)="resetPassword()">
-    <label>New password</label>
-    <input
-      type="password"
-      [(ngModel)]="newPassword"
-      name="newPassword"
-      required
-    />
-
-    <button class="btn" type="submit" [disabled]="loading">
-      {{ loading ? 'Saving…' : 'Reset password' }}
-    </button>
-
-    <p class="notice" *ngIf="msg">{{ msg }}</p>
-  </form>
+  <p id="msg" class="muted">{{ msg }}</p>
 </main>

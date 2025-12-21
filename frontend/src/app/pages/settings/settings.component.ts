@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { ApiService } from '../../services/api.service';
 import { NgIf } from '@angular/common';
+import { ApiService } from '../../services/api.service';
 
 @Component({
   standalone: true,
@@ -12,15 +12,17 @@ import { NgIf } from '@angular/common';
 })
 export class SettingsComponent implements OnInit {
   username = '';
-  avatarUrl = 'assets/user.png';
-
-  newUsername = '';
   msg = '';
-  busy = false;
+
+  loadingSave = false;
+  loadingUpload = false;
+  loadingDelete = false;
+
+  private file: File | null = null;
 
   constructor(private api: ApiService, private router: Router) {}
 
-  async ngOnInit() {
+  async ngOnInit(): Promise<void> {
     this.applyStoredTheme();
     await this.loadMe();
   }
@@ -35,100 +37,101 @@ export class SettingsComponent implements OnInit {
 
   async loadMe() {
     try {
-      const me = await this.api.request<any>('/api/users/me');
-      this.username = me.username || me.email || '';
-      this.newUsername = me.username || '';
-      this.avatarUrl = me.profile_picture_url || 'assets/user.png';
+      const me: any = await this.api.request('/api/users/me', { method: 'GET' });
+      this.username = me.username || '';
     } catch (e: any) {
-      this.msg = e.message || 'Please login';
+      // not logged in
       this.router.navigate(['/']);
     }
   }
 
-  async saveUsername() {
+  async save() {
     this.msg = '';
-    this.busy = true;
+    this.loadingSave = true;
     try {
-      const r = await this.api.request<any>('/api/users/me', {
+      await this.api.request('/api/auth/me', {
         method: 'PUT',
-        body: { username: this.newUsername.trim() },
+        body: { username: this.username.trim() },
       });
-      this.username = r.username || this.newUsername.trim() || this.username;
-      this.msg = 'Saved';
+      this.msg = 'Saved.';
     } catch (e: any) {
-      this.msg = e.message || 'Failed';
+      this.msg = e?.message || 'Save failed';
     } finally {
-      this.busy = false;
+      this.loadingSave = false;
     }
   }
 
-  async onAvatarSelected(evt: Event) {
-    const input = evt.target as HTMLInputElement;
-    if (!input.files || !input.files[0]) return;
+  onFile(ev: Event) {
+    const input = ev.target as HTMLInputElement;
+    const file = input.files?.[0] || null;
+    this.msg = '';
+    if (!file) {
+      this.file = null;
+      return;
+    }
 
-    const file = input.files[0];
     if (!file.type.startsWith('image/')) {
       this.msg = 'Please select an image file.';
       input.value = '';
+      this.file = null;
       return;
     }
     if (file.size > 4 * 1024 * 1024) {
       this.msg = 'Image too large (max 4MB).';
       input.value = '';
+      this.file = null;
+      return;
+    }
+    this.file = file;
+  }
+
+  async uploadAvatar() {
+    this.msg = '';
+    if (!this.file) {
+      this.msg = 'Please choose an image.';
       return;
     }
 
-    const fd = new FormData();
-    fd.append('avatar', file);
-
-    this.msg = '';
-    this.busy = true;
-
+    this.loadingUpload = true;
     try {
-      const r = await this.api.request<any>('/api/users/me/avatar', {
+      const fd = new FormData();
+      fd.append('avatar', this.file);
+
+      const r: any = await this.api.request('/api/users/me/avatar', {
         method: 'POST',
         body: fd,
       });
-      this.avatarUrl = r.profile_picture_url || this.avatarUrl;
-      this.msg = 'Avatar updated';
+
+      // update token fallback if backend returns one (optional)
+      if (r?.token) localStorage.setItem('token', String(r.token));
+
+      this.msg = 'Uploaded.';
+      this.file = null;
     } catch (e: any) {
-      this.msg = e.message || 'Upload failed';
+      this.msg = e?.message || 'Upload failed';
     } finally {
-      this.busy = false;
+      this.loadingUpload = false;
     }
   }
 
   async deleteAccount() {
+    this.msg = '';
     if (!confirm('Delete your account? This cannot be undone.')) return;
 
-    this.msg = '';
-    this.busy = true;
+    this.loadingDelete = true;
     try {
       await this.api.request('/api/users/me', { method: 'DELETE' });
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('auth_role');
+      localStorage.removeItem('token');
       this.router.navigate(['/']);
     } catch (e: any) {
-      this.msg = e.message || 'Delete failed';
+      this.msg = e?.message || 'Delete failed';
     } finally {
-      this.busy = false;
-    }
-  }
-
-  async logout() {
-    try {
-      await this.api.request('/api/auth/logout', { method: 'POST' });
-    } finally {
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('auth_role');
-      this.router.navigate(['/']);
+      this.loadingDelete = false;
     }
   }
 
   private applyStoredTheme() {
     const theme = localStorage.getItem('theme');
-    if (theme === 'dark') {
-      document.body.classList.add('dark');
-    }
+    if (theme === 'dark') document.body.classList.add('dark');
   }
 }

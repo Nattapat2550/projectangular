@@ -4,22 +4,22 @@ import { FormsModule } from '@angular/forms';
 import { NgForOf, NgIf } from '@angular/common';
 import { ApiService } from '../../services/api.service';
 
+type Role = 'user' | 'admin';
+
 interface UserRow {
   id: number;
-  email: string;
   username: string | null;
-  role: 'user' | 'admin';
+  email: string;
+  role: Role;
 }
 
 interface CarouselItem {
   id: number;
   item_index: number;
-  title: string;
-  subtitle: string;
-  description: string;
-  image_dataurl?: string;
-  // client-side only
-  _file?: File | null;
+  image_dataurl: string;
+  title?: string;
+  subtitle?: string;
+  description?: string;
 }
 
 @Component({
@@ -29,30 +29,46 @@ interface CarouselItem {
   templateUrl: './admin.component.html',
 })
 export class AdminComponent implements OnInit {
-  username = '...';
+  username = 'Admin';
   avatarUrl = 'assets/user.png';
+
   msg = '';
 
+  // Homepage section editor
+  section = 'welcome_header';
+  content = '';
+  loadingHome = false;
+
   users: UserRow[] = [];
+  savingUserId: number | null = null;
 
   carousel: CarouselItem[] = [];
-  newItem: Partial<CarouselItem> & { _file?: File | null } = {
+  savingCarouselId: number | null = null;
+  deletingCarouselId: number | null = null;
+
+  // New slide form
+  newSlide: {
+    item_index: number;
+    title: string;
+    subtitle: string;
+    description: string;
+  } = {
+    item_index: 0,
     title: '',
     subtitle: '',
     description: '',
-    _file: null,
   };
+  private newSlideFile: File | null = null;
+  loadingAdd = false;
 
-  welcomeHeader = '';
-  mainParagraph = '';
+  // Per-row uploaded files
+  private rowFiles: Record<number, File | null> = {};
 
   constructor(private api: ApiService, private router: Router) {}
 
-  async ngOnInit() {
+  async ngOnInit(): Promise<void> {
     this.applyStoredTheme();
-    await this.loadMe();
-
-    await Promise.all([this.loadUsers(), this.loadHomepage(), this.loadCarousel()]);
+    await this.load();
   }
 
   toggleTheme() {
@@ -66,175 +82,192 @@ export class AdminComponent implements OnInit {
   async logout() {
     try {
       await this.api.request('/api/auth/logout', { method: 'POST' });
-    } finally {
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('auth_role');
-      this.router.navigate(['/']);
-    }
+    } catch {}
+    localStorage.removeItem('token');
+    this.router.navigate(['/']);
   }
 
-  private async loadMe() {
+  private async load() {
+    this.msg = '';
     try {
-      const me = await this.api.request<any>('/api/auth/me');
+      const me: any = await this.api.request('/api/users/me', { method: 'GET' });
+
+      const role = String(me.role || '').toLowerCase();
+      if (role !== 'admin') {
+        this.router.navigate(['/home']);
+        return;
+      }
+
       this.username = me.username || me.email || 'Admin';
       this.avatarUrl = me.profile_picture_url || 'assets/user.png';
-      localStorage.setItem('auth_role', me.role || 'admin');
-    } catch {
+
+      await Promise.all([this.loadUsers(), this.loadCarousel()]);
+    } catch (e: any) {
       this.router.navigate(['/']);
     }
   }
 
   async loadUsers() {
     try {
-      this.users = await this.api.request<UserRow[]>('/api/admin/users');
+      const users = await this.api.request<UserRow[]>('/api/admin/users', { method: 'GET' });
+      this.users = (users || []).map(u => ({
+        ...u,
+        role: (String((u as any).role || 'user').toLowerCase() as Role),
+      }));
     } catch (e: any) {
-      this.msg = e.message || 'Failed to load users';
+      this.msg = e?.message || 'Failed to load users';
     }
   }
 
   async saveUser(u: UserRow) {
     this.msg = '';
+    this.savingUserId = u.id;
     try {
       await this.api.request(`/api/admin/users/${u.id}`, {
         method: 'PUT',
-        body: { username: u.username, role: u.role },
+        body: {
+          username: u.username ?? '',
+          email: u.email ?? '',
+          role: u.role,
+        },
       });
-      this.msg = 'User saved';
+      this.msg = 'Saved';
     } catch (e: any) {
-      this.msg = e.message || 'Failed to save user';
+      this.msg = e?.message || 'Save failed';
+    } finally {
+      this.savingUserId = null;
     }
   }
 
-  async loadHomepage() {
-    try {
-      const sections = await this.api.request<
-        { section_key: string; section_value: string }[]
-      >('/api/homepage');
-
-      const map = new Map(sections.map((s) => [s.section_key, s.section_value]));
-      this.welcomeHeader = map.get('welcome_header') || '';
-      this.mainParagraph = map.get('main_paragraph') || '';
-    } catch (e: any) {
-      this.msg = e.message || 'Failed to load homepage';
-    }
-  }
-
-  async saveHomepage() {
+  async saveHomepageSection() {
     this.msg = '';
+    this.loadingHome = true;
     try {
       await this.api.request('/api/homepage', {
         method: 'PUT',
-        body: { section_key: 'welcome_header', section_value: this.welcomeHeader },
+        body: { section_name: this.section.trim(), content: this.content },
       });
-      await this.api.request('/api/homepage', {
-        method: 'PUT',
-        body: { section_key: 'main_paragraph', section_value: this.mainParagraph },
-      });
-      this.msg = 'Homepage saved';
+      this.msg = `Section "${this.section.trim()}" saved.`;
     } catch (e: any) {
-      this.msg = e.message || 'Failed to save homepage';
+      this.msg = e?.message || 'Homepage save failed';
+    } finally {
+      this.loadingHome = false;
     }
   }
 
   async loadCarousel() {
     try {
-      const items = await this.api.request<CarouselItem[]>('/api/admin/carousel');
-      this.carousel = (items || []).sort((a, b) => a.item_index - b.item_index);
+      const items = await this.api.request<CarouselItem[]>('/api/admin/carousel', { method: 'GET' });
+      this.carousel = (items || []).slice().sort((a, b) => (a.item_index ?? 0) - (b.item_index ?? 0));
+      this.rowFiles = {};
     } catch (e: any) {
-      this.msg = e.message || 'Failed to load carousel';
+      this.msg = e?.message || 'Failed to load carousel';
     }
   }
 
-  onFile(evt: Event, item: CarouselItem) {
-    const input = evt.target as HTMLInputElement;
-    if (!input.files || !input.files[0]) return;
-    item._file = input.files[0];
+  onNewSlideFile(ev: Event) {
+    const input = ev.target as HTMLInputElement;
+    const file = input.files?.[0] || null;
+    this.newSlideFile = file;
   }
 
-  onNewFile(evt: Event) {
-    const input = evt.target as HTMLInputElement;
-    if (!input.files || !input.files[0]) return;
-    this.newItem._file = input.files[0];
+  onCarouselFile(id: number, ev: Event) {
+    const input = ev.target as HTMLInputElement;
+    const file = input.files?.[0] || null;
+    this.rowFiles[id] = file;
   }
 
-  private async fileToDataUrl(file: File): Promise<string> {
-    return await new Promise((resolve, reject) => {
-      const r = new FileReader();
-      r.onload = () => resolve(String(r.result || ''));
-      r.onerror = () => reject(new Error('Failed to read file'));
-      r.readAsDataURL(file);
-    });
-  }
-
-  async saveCarousel(item: CarouselItem) {
+  async addSlide() {
     this.msg = '';
-    try {
-      let image_dataurl = item.image_dataurl;
-      if (item._file) {
-        image_dataurl = await this.fileToDataUrl(item._file);
-      }
-
-      await this.api.request(`/api/admin/carousel/${item.id}`, {
-        method: 'PUT',
-        body: {
-          item_index: item.item_index,
-          title: item.title,
-          subtitle: item.subtitle,
-          description: item.description,
-          image_dataurl,
-        },
-      });
-
-      item._file = null;
-      await this.loadCarousel();
-      this.msg = 'Carousel saved';
-    } catch (e: any) {
-      this.msg = e.message || 'Failed to save carousel';
+    if (!this.newSlideFile) {
+      this.msg = 'Please choose an image.';
+      return;
     }
-  }
-
-  async deleteCarousel(item: CarouselItem) {
-    if (!confirm('Delete this item?')) return;
-
-    this.msg = '';
-    try {
-      await this.api.request(`/api/admin/carousel/${item.id}`, { method: 'DELETE' });
-      await this.loadCarousel();
-      this.msg = 'Carousel deleted';
-    } catch (e: any) {
-      this.msg = e.message || 'Failed to delete carousel';
-    }
-  }
-
-  async addCarousel() {
-    this.msg = '';
+    this.loadingAdd = true;
 
     try {
-      const nextIndex =
-        this.carousel.length ? Math.max(...this.carousel.map((x) => x.item_index)) + 1 : 0;
-
-      let image_dataurl: string | undefined = undefined;
-      if (this.newItem._file) {
-        image_dataurl = await this.fileToDataUrl(this.newItem._file);
-      }
+      const imageDataUrl = await this.readAsDataUrl(this.newSlideFile);
 
       await this.api.request('/api/admin/carousel', {
         method: 'POST',
         body: {
-          item_index: nextIndex,
-          title: this.newItem.title || '',
-          subtitle: this.newItem.subtitle || '',
-          description: this.newItem.description || '',
-          image_dataurl,
+          item_index: Number(this.newSlide.item_index ?? 0),
+          title: this.newSlide.title || '',
+          subtitle: this.newSlide.subtitle || '',
+          description: this.newSlide.description || '',
+          image_dataurl: imageDataUrl,
         },
       });
 
-      this.newItem = { title: '', subtitle: '', description: '', _file: null };
+      this.msg = 'Slide added.';
+      this.newSlide = { item_index: 0, title: '', subtitle: '', description: '' };
+      this.newSlideFile = null;
       await this.loadCarousel();
-      this.msg = 'Carousel item added';
     } catch (e: any) {
-      this.msg = e.message || 'Failed to add carousel';
+      this.msg = e?.message || 'Create failed';
+    } finally {
+      this.loadingAdd = false;
     }
+  }
+
+  async saveCarousel(it: CarouselItem) {
+    this.msg = '';
+    this.savingCarouselId = it.id;
+
+    try {
+      let imageDataUrl: string | undefined = undefined;
+      const file = this.rowFiles[it.id];
+      if (file) {
+        imageDataUrl = await this.readAsDataUrl(file);
+      }
+
+      const body: any = {
+        item_index: Number(it.item_index ?? 0),
+        title: it.title || '',
+        subtitle: it.subtitle || '',
+        description: it.description || '',
+      };
+      if (imageDataUrl) body.image_dataurl = imageDataUrl;
+
+      await this.api.request(`/api/admin/carousel/${it.id}`, {
+        method: 'PUT',
+        body,
+      });
+
+      this.msg = 'Saved.';
+      await this.loadCarousel();
+    } catch (e: any) {
+      this.msg = e?.message || 'Save failed';
+    } finally {
+      this.savingCarouselId = null;
+    }
+  }
+
+  async deleteCarousel(id: number) {
+    this.msg = '';
+    if (!confirm('Delete this slide?')) return;
+
+    this.deletingCarouselId = id;
+    try {
+      await this.api.request(`/api/admin/carousel/${id}`, { method: 'DELETE' });
+      this.msg = 'Deleted.';
+      await this.loadCarousel();
+    } catch (e: any) {
+      this.msg = e?.message || 'Delete failed';
+    } finally {
+      this.deletingCarouselId = null;
+    }
+  }
+
+  private readAsDataUrl(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      if (!file.type.startsWith('image/')) return reject(new Error('Invalid image file'));
+
+      const r = new FileReader();
+      r.onload = () => resolve(String(r.result || ''));
+      r.onerror = () => reject(new Error('Failed to read image'));
+      r.readAsDataURL(file);
+    });
   }
 
   private applyStoredTheme() {

@@ -10,65 +10,75 @@
       <img id="avatar" [src]="avatarUrl" alt="avatar" />
       <span id="uname">{{ username }}</span>
       <div class="dropdown">
+        <a *ngIf="isAdmin" routerLink="/admin">Admin</a>
         <a routerLink="/settings">Settings</a>
-        <a routerLink="/admin" *ngIf="isAdmin">Admin</a>
-        <button id="logoutBtn" class="linklike" (click)="logout()">
-          Logout
-        </button>
+        <button id="logoutBtn" class="linklike" (click)="logout()">Logout</button>
       </div>
     </div>
   </div>
 </nav>
 
 <main class="container">
-  <h1>Hello, <span id="uname">{{ username }}</span></h1>
-
-  <p class="notice" *ngIf="msg">{{ msg }}</p>
-
-  <div class="card-grid">
-    <div class="card">
-      <h2>Welcome Header</h2>
-      <p>{{ welcomeHeader }}</p>
-    </div>
-    <div class="card">
-      <h2>Main Paragraph</h2>
-      <p>{{ mainParagraph }}</p>
-    </div>
-  </div>
-
-  <section
+  <!-- Pure CSS/JS Carousel (Angular version) -->
+  <div
     class="carousel"
-    *ngIf="carouselItems.length"
+    id="carousel"
+    *ngIf="carouselItems.length > 0"
     (mouseenter)="pauseCarousel()"
     (mouseleave)="resumeCarousel()"
   >
     <div
       class="carousel-track"
       id="carousel-track"
-      [style.transform]="'translateX(-' + currentIndex * 100 + '%)'"
+      [style.transform]="'translateX(-' + (currentIndex * 100) + '%)'"
     >
-      <div class="carousel-item" *ngFor="let item of carouselItems">
-        <img [src]="item.image_dataurl" alt="carousel image" />
-        <div class="carousel-caption">
-          <h3>{{ item.title }}</h3>
-          <p>{{ item.subtitle }}</p>
-          <p>{{ item.description }}</p>
-        </div>
+      <div class="carousel-slide" *ngFor="let it of carouselItems; let i = index">
+        <img [src]="it.image_dataurl" [alt]="it.title || ('slide ' + (i + 1))" />
       </div>
     </div>
 
-    <button class="carousel-btn prev" id="prevBtn" (click)="prev()">‹</button>
-    <button class="carousel-btn next" id="nextBtn" (click)="next()">›</button>
+    <button
+      class="carousel-prev"
+      id="carousel-prev"
+      aria-label="รูปก่อนหน้า"
+      title="< รูปก่อนหน้า"
+      (click)="prev()"
+      [disabled]="carouselItems.length <= 1"
+    >
+      &lt;
+    </button>
+    <button
+      class="carousel-next"
+      id="carousel-next"
+      aria-label="รูปถัดไป"
+      title="> รูปถัดไป"
+      (click)="next()"
+      [disabled]="carouselItems.length <= 1"
+    >
+      &gt;
+    </button>
 
-    <div class="carousel-indicators" id="indicators">
+    <div class="carousel-indicators" id="carousel-indicators">
       <button
-        *ngFor="let item of carouselItems; let i = index"
-        [class.active]="i === currentIndex"
+        *ngFor="let it of carouselItems; let i = index"
+        type="button"
+        [attr.aria-label]="'slide ' + (i + 1)"
         (click)="goTo(i)"
-        [attr.aria-label]="'Go to slide ' + (i + 1)"
+        [style.opacity]="i === currentIndex ? '1' : '.75'"
       >
-        <img [src]="item.image_dataurl" alt="thumb" />
+        <img [src]="it.image_dataurl" alt="" />
       </button>
     </div>
-  </section>
+  </div>
+
+  <div id="carousel-caption-box" class="card" *ngIf="currentItem">
+    <h3 id="cc-title">{{ currentItem.title }}</h3>
+    <h5 id="cc-subtitle" class="muted">{{ currentItem.subtitle }}</h5>
+    <p id="cc-desc">{{ currentItem.description }}</p>
+  </div>
+
+  <hr />
+
+  <h2 id="welcome_header">{{ welcomeHeader }}</h2>
+  <p id="main_paragraph">{{ mainParagraph }}</p>
 </main>

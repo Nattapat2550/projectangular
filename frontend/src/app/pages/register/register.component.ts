@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { ApiService } from '../../services/api.service';
 import { NgIf } from '@angular/common';
+import { ApiService } from '../../services/api.service';
 
 @Component({
   standalone: true,
@@ -12,8 +12,8 @@ import { NgIf } from '@angular/common';
 })
 export class RegisterComponent implements OnInit {
   email = '';
-  msg = '';
   loading = false;
+  msg = '';
 
   constructor(private api: ApiService, private router: Router) {}
 
@@ -33,28 +33,29 @@ export class RegisterComponent implements OnInit {
     this.msg = '';
     this.loading = true;
     try {
+      const email = this.email.trim();
       await this.api.request('/api/auth/register', {
         method: 'POST',
-        body: { email: this.email.trim() },
+        body: { email },
       });
-      this.router.navigate(['/check'], {
-        queryParams: { email: this.email.trim() },
-      });
+
+      // docker behavior
+      sessionStorage.setItem('pendingEmail', email);
+
+      this.router.navigate(['/check']);
     } catch (e: any) {
-      this.msg = e.message || 'Register failed';
+      this.msg = e?.message || 'Register failed';
     } finally {
       this.loading = false;
     }
   }
 
-  loginWithGoogle() {
+  signupWithGoogle() {
     window.location.href = `${this.api.apiBase}/auth/google`;
   }
 
   private applyStoredTheme() {
     const theme = localStorage.getItem('theme');
-    if (theme === 'dark') {
-      document.body.classList.add('dark');
-    }
+    if (theme === 'dark') document.body.classList.add('dark');
   }
 }

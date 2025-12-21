@@ -1,31 +1,32 @@
 <nav class="nav">
   <div class="brand">MySite</div>
   <div class="links">
-    <a routerLink="/" class="active">Home</a>
+    <a routerLink="/">Home</a>
+    <a routerLink="/about">About</a>
+    <a routerLink="/contact">Contact</a>
     <button id="themeToggle" (click)="toggleTheme()">🌓</button>
   </div>
 </nav>
 
 <main class="container">
-  <h1>Download</h1>
+  <h1>Download MyApp</h1>
+  <p class="muted">เลือกแพลตฟอร์มที่ต้องการติดตั้งแอป</p>
+
   <div class="card-grid">
-    <div class="card">
+    <section class="card">
       <h2>Windows</h2>
-      <p>Download the Windows version.</p>
-      <button class="btn" id="downloadWindows" (click)="downloadWindows()">
+      <p>ไฟล์ติดตั้งสำหรับ Windows (<code>.msi</code> หรือ <code>.exe</code>)</p>
+      <button id="downloadWindows" class="btn" (click)="downloadWindows()">
         Download for Windows
       </button>
-    </div>
-    <div class="card">
+    </section>
+
+    <section class="card">
       <h2>Android</h2>
-      <p>Download the Android version.</p>
-      <button
-        class="btn outline"
-        id="downloadAndroid"
-        (click)="downloadAndroid()"
-      >
+      <p>ไฟล์ติดตั้งแอปมือถือ <code>app-release.apk</code></p>
+      <button id="downloadAndroid" class="btn" (click)="downloadAndroid()">
         Download for Android
       </button>
-    </div>
+    </section>
   </div>
 </main>

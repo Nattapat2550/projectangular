@@ -1,12 +1,14 @@
 <nav class="nav">
   <div class="brand">MySite</div>
   <div class="links">
-    <a routerLink="/" class="active">Home</a>
+    <a routerLink="/">Home</a>
+    <a routerLink="/about">About</a>
+    <a routerLink="/download">Download</a>
     <button id="themeToggle" (click)="toggleTheme()">🌓</button>
   </div>
 </nav>
 
 <main class="container">
   <h1>Contact</h1>
-  <p>Contact us at: support&#64;example.com</p>
+  <p>Contact: <a href="mailto:support@example.com">support@example.com</a></p>
 </main>

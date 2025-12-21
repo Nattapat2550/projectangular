@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { ApiService } from '../../services/api.service';
 import { NgIf } from '@angular/common';
+import { ApiService } from '../../services/api.service';
 
 @Component({
   standalone: true,
@@ -14,22 +14,19 @@ export class ResetComponent implements OnInit {
   email = '';
   token = '';
   newPassword = '';
-  msg = '';
+
   loading = false;
+  msg = '';
 
   constructor(
+    private api: ApiService,
     private route: ActivatedRoute,
     private router: Router,
-    private api: ApiService,
   ) {}
 
   ngOnInit(): void {
     this.applyStoredTheme();
     this.token = this.route.snapshot.queryParamMap.get('token') || '';
-  }
-
-  get isResetMode(): boolean {
-    return !!this.token;
   }
 
   toggleTheme() {
@@ -48,15 +45,15 @@ export class ResetComponent implements OnInit {
         method: 'POST',
         body: { email: this.email.trim() },
       });
-      this.msg = 'If the email exists, a reset link was sent.';
+      this.msg = 'If your email exists, a reset link was sent.';
     } catch (e: any) {
-      this.msg = e.message || 'Failed';
+      this.msg = e?.message || 'Request failed';
     } finally {
       this.loading = false;
     }
   }
 
-  async resetPassword() {
+  async doReset() {
     this.msg = '';
     this.loading = true;
     try {
@@ -64,11 +61,11 @@ export class ResetComponent implements OnInit {
         method: 'POST',
         body: { token: this.token, newPassword: this.newPassword },
       });
-      this.msg = 'Password reset successful. You can login now.';
-      // optionally redirect to login after a short delay
-      setTimeout(() => this.router.navigate(['/login']), 500);
+      this.msg = 'Password reset successfully. Please login.';
+      // small UX: go to login after reset
+      setTimeout(() => this.router.navigate(['/login']), 400);
     } catch (e: any) {
-      this.msg = e.message || 'Failed';
+      this.msg = e?.message || 'Reset failed';
     } finally {
       this.loading = false;
     }
@@ -76,8 +73,6 @@ export class ResetComponent implements OnInit {
 
   private applyStoredTheme() {
     const theme = localStorage.getItem('theme');
-    if (theme === 'dark') {
-      document.body.classList.add('dark');
-    }
+    if (theme === 'dark') document.body.classList.add('dark');
   }
 }

@@ -1,29 +1,22 @@
 <nav class="nav">
   <div class="brand">MySite</div>
   <div class="links">
-    <a routerLink="/" class="active">Home</a>
+    <a routerLink="/">Home</a>
     <button id="themeToggle" (click)="toggleTheme()">🌓</button>
   </div>
 </nav>
 
-<main class="container small">
-  <h1>Register</h1>
+<main class="container">
+  <h2>Register with Email</h2>
 
   <form (ngSubmit)="onSubmit()">
     <label>Email</label>
     <input type="email" [(ngModel)]="email" name="email" required />
-
-    <button class="btn" type="submit" [disabled]="loading">
-      {{ loading ? 'Sending…' : 'Register' }}
-    </button>
-
-    <div class="row">
-      <a class="btn outline" routerLink="/login">Login</a>
-      <button class="btn outline" type="button" (click)="loginWithGoogle()">
-        Continue with Google
-      </button>
-    </div>
-
-    <p class="notice" *ngIf="msg">{{ msg }}</p>
+    <button class="btn" type="submit" [disabled]="loading">{{ loading ? 'Sending...' : 'Register' }}</button>
   </form>
+
+  <div class="divider">or</div>
+  <button class="btn outline" id="googleBtn" (click)="signupWithGoogle()">Sign up with Google</button>
+
+  <p id="msg" class="muted">{{ msg }}</p>
 </main>

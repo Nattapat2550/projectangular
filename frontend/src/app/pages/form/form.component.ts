@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { ApiService } from '../../services/api.service';
 import { NgIf } from '@angular/common';
+import { ApiService } from '../../services/api.service';
 
 @Component({
   standalone: true,
@@ -14,22 +14,22 @@ export class FormComponent implements OnInit {
   email = '';
   username = '';
   password = '';
-  showPw = false;
-  msg = '';
+
   loading = false;
+  msg = '';
 
   constructor(
-    private route: ActivatedRoute,
-    private router: Router,
     private api: ApiService,
+    private router: Router,
+    private route: ActivatedRoute,
   ) {}
 
   ngOnInit(): void {
     this.applyStoredTheme();
-    this.email = this.route.snapshot.queryParamMap.get('email') || '';
-    if (!this.email) {
-      this.router.navigate(['/']);
-    }
+
+    const stored = sessionStorage.getItem('pendingEmail') || '';
+    const qp = this.route.snapshot.queryParamMap.get('email') || '';
+    this.email = qp || stored || '';
   }
 
   toggleTheme() {
@@ -43,21 +43,29 @@ export class FormComponent implements OnInit {
   async onSubmit() {
     this.msg = '';
     this.loading = true;
-
     try {
-      await this.api.request('/api/auth/complete-profile', {
+      const email = this.email.trim();
+      if (!email) throw new Error('Missing email. Please register again.');
+
+      const r: any = await this.api.request('/api/auth/complete-profile', {
         method: 'POST',
         body: {
-          email: this.email.trim(),
+          email,
           username: this.username.trim(),
           password: this.password,
         },
       });
 
-      // cookie set by backend
-      this.router.navigate(['/home']);
+      // optional Bearer fallback token
+      if (r?.token) localStorage.setItem('token', String(r.token));
+
+      // clear pending
+      sessionStorage.removeItem('pendingEmail');
+
+      const role = String(r?.role || 'user').toLowerCase();
+      this.router.navigate([role === 'admin' ? '/admin' : '/home']);
     } catch (e: any) {
-      this.msg = e.message || 'Failed';
+      this.msg = e?.message || 'Failed';
     } finally {
       this.loading = false;
     }
@@ -65,8 +73,6 @@ export class FormComponent implements OnInit {
 
   private applyStoredTheme() {
     const theme = localStorage.getItem('theme');
-    if (theme === 'dark') {
-      document.body.classList.add('dark');
-    }
+    if (theme === 'dark') document.body.classList.add('dark');
   }
 }

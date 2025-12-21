@@ -1,7 +1,7 @@
 <nav class="nav">
   <div class="brand">MySite</div>
   <div class="links">
-    <a routerLink="/home" class="active">Home</a>
+    <a routerLink="/home">Home</a>
     <button id="themeToggle" (click)="toggleTheme()">🌓</button>
 
     <div id="userMenu" class="user-menu">
@@ -9,109 +9,134 @@
       <span id="uname">{{ username }}</span>
       <div class="dropdown">
         <a routerLink="/settings">Settings</a>
-        <button class="linklike" id="logoutBtn" (click)="logout()">Logout</button>
+        <button id="logoutBtn" class="linklike" (click)="logout()">Logout</button>
       </div>
     </div>
   </div>
 </nav>
 
 <main class="container">
-  <h1>Admin</h1>
-  <p>Manage homepage content, carousel, and users.</p>
-
-  <p class="notice" *ngIf="msg">{{ msg }}</p>
+  <h2>Admin Panel</h2>
 
   <section class="card">
-    <h2>Homepage Content</h2>
+    <h3>Homepage Content</h3>
+    <form id="homeForm" (ngSubmit)="saveHomepageSection()">
+      <label>Section</label>
+      <input type="text" id="section" [(ngModel)]="section" name="section" placeholder="welcome_header" required />
 
-    <div class="row">
-      <div style="flex: 1">
-        <label>Welcome Header</label>
-        <input [(ngModel)]="welcomeHeader" />
-      </div>
-      <div style="flex: 2">
-        <label>Main Paragraph</label>
-        <textarea rows="3" [(ngModel)]="mainParagraph"></textarea>
-      </div>
-    </div>
+      <label>Content</label>
+      <textarea id="content" rows="3" [(ngModel)]="content" name="content"></textarea>
 
-    <button class="btn" (click)="saveHomepage()">Save Homepage</button>
+      <button class="btn" type="submit" [disabled]="loadingHome">
+        {{ loadingHome ? 'Saving...' : 'Save section' }}
+      </button>
+    </form>
   </section>
 
-  <section class="card">
-    <h2>Users</h2>
-
-    <table class="table">
+  <section>
+    <h3>Users</h3>
+    <table id="usersTable">
       <thead>
         <tr>
-          <th>ID</th>
-          <th>Email</th>
-          <th>Username</th>
-          <th>Role</th>
-          <th>Actions</th>
+          <th>ID</th><th>Username</th><th>Email</th><th>Role</th><th>Actions</th>
         </tr>
       </thead>
       <tbody>
         <tr *ngFor="let u of users">
           <td>{{ u.id }}</td>
-          <td>{{ u.email }}</td>
-          <td>{{ u.username }}</td>
-          <td>{{ u.role }}</td>
+          <td><input [(ngModel)]="u.username" [ngModelOptions]="{standalone:true}" /></td>
+          <td><input [(ngModel)]="u.email" [ngModelOptions]="{standalone:true}" /></td>
           <td>
-            <select [(ngModel)]="u.role">
+            <select [(ngModel)]="u.role" [ngModelOptions]="{standalone:true}">
               <option value="user">user</option>
               <option value="admin">admin</option>
             </select>
-            <button class="btn outline" (click)="saveUser(u)">Save</button>
+          </td>
+          <td>
+            <button class="btn small" type="button" (click)="saveUser(u)" [disabled]="savingUserId === u.id">
+              {{ savingUserId === u.id ? 'Saving...' : 'Save' }}
+            </button>
           </td>
         </tr>
       </tbody>
     </table>
   </section>
 
-  <section class="card">
-    <h2>Carousel</h2>
-
-    <div class="card-grid">
-      <div class="card" *ngFor="let item of carousel">
-        <h3>#{{ item.item_index }} - {{ item.title }}</h3>
-        <p>{{ item.subtitle }}</p>
-
-        <label>Title</label>
-        <input [(ngModel)]="item.title" />
-
-        <label>Subtitle</label>
-        <input [(ngModel)]="item.subtitle" />
-
-        <label>Description</label>
-        <textarea rows="3" [(ngModel)]="item.description"></textarea>
-
-        <label>Image</label>
-        <input type="file" accept="image/*" (change)="onFile($event, item)" />
-
-        <div class="row">
-          <button class="btn" (click)="saveCarousel(item)">Save</button>
-          <button class="btn danger" (click)="deleteCarousel(item)">Delete</button>
+  <section>
+    <h3>Carousel Manager</h3>
+    <form id="carouselForm" (ngSubmit)="addSlide()">
+      <div class="row">
+        <div style="flex:1;">
+          <label>Image (png/jpg/gif/webp)</label>
+          <input
+            type="file"
+            id="cImage"
+            accept="image/png,image/jpeg,image/jpg,image/gif,image/webp"
+            required
+            (change)="onNewSlideFile($event)"
+          />
+        </div>
+        <div style="width:160px;">
+          <label>Index</label>
+          <input type="number" id="cIndex" [(ngModel)]="newSlide.item_index" name="cIndex" />
         </div>
       </div>
 
-      <div class="card">
-        <h3>Add New</h3>
+      <label>Title</label>
+      <input type="text" id="cTitle" [(ngModel)]="newSlide.title" name="cTitle" />
+      <label>Subtitle</label>
+      <input type="text" id="cSubtitle" [(ngModel)]="newSlide.subtitle" name="cSubtitle" />
+      <label>Description</label>
+      <textarea id="cDesc" rows="2" [(ngModel)]="newSlide.description" name="cDesc"></textarea>
 
-        <label>Title</label>
-        <input [(ngModel)]="newItem.title" />
+      <button class="btn" type="submit" [disabled]="loadingAdd">
+        {{ loadingAdd ? 'Adding...' : 'Add slide' }}
+      </button>
+    </form>
 
-        <label>Subtitle</label>
-        <input [(ngModel)]="newItem.subtitle" />
+    <div style="height:1rem"></div>
 
-        <label>Description</label>
-        <textarea rows="3" [(ngModel)]="newItem.description"></textarea>
-
-        <label>Image</label>
-        <input type="file" accept="image/*" (change)="onNewFile($event)" />
-
-        <button class="btn" (click)="addCarousel()">Add</button>
-      </div>
-    </div>
+    <table id="carouselTable">
+      <thead>
+        <tr>
+          <th>ID</th><th>Index</th><th>Preview</th>
+          <th>Title</th><th>Subtitle</th><th>Description</th>
+          <th>New Image</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let it of carousel">
+          <td>{{ it.id }}</td>
+          <td>
+            <input type="number" [(ngModel)]="it.item_index" [ngModelOptions]="{standalone:true}" style="width:80px"/>
+          </td>
+          <td>
+            <img [src]="it.image_dataurl" alt="preview" style="width:120px;height:60px;object-fit:cover;border-radius:.25rem"/>
+          </td>
+          <td><input type="text" [(ngModel)]="it.title" [ngModelOptions]="{standalone:true}" /></td>
+          <td><input type="text" [(ngModel)]="it.subtitle" [ngModelOptions]="{standalone:true}" /></td>
+          <td>
+            <textarea rows="2" [(ngModel)]="it.description" [ngModelOptions]="{standalone:true}"></textarea>
+          </td>
+          <td>
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/jpg,image/gif,image/webp"
+              (change)="onCarouselFile(it.id, $event)"
+            />
+          </td>
+          <td>
+            <button class="btn" type="button" (click)="saveCarousel(it)" [disabled]="savingCarouselId===it.id">
+              {{ savingCarouselId===it.id ? 'Saving...' : 'Save' }}
+            </button>
+            <button class="btn danger" type="button" (click)="deleteCarousel(it.id)" [disabled]="deletingCarouselId===it.id">
+              {{ deletingCarouselId===it.id ? 'Deleting...' : 'Delete' }}
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
   </section>
+
+  <p id="msg" class="muted">{{ msg }}</p>
 </main>

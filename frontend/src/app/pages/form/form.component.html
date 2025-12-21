@@ -1,37 +1,26 @@
 <nav class="nav">
   <div class="brand">MySite</div>
   <div class="links">
-    <a routerLink="/" class="active">Home</a>
+    <a routerLink="/">Home</a>
     <button id="themeToggle" (click)="toggleTheme()">🌓</button>
   </div>
 </nav>
 
-<main class="container small">
-  <h1>Complete profile</h1>
+<main class="container">
+  <h2>Set username &amp; password</h2>
 
   <form (ngSubmit)="onSubmit()">
-    <p>Account: <strong>{{ email }}</strong></p>
+    <label>Email</label>
+    <input type="email" [(ngModel)]="email" name="email" required />
 
     <label>Username</label>
-    <input type="text" [(ngModel)]="username" name="username" required />
+    <input type="text" [(ngModel)]="username" name="username" minlength="3" required />
 
     <label>Password</label>
-    <input
-      [type]="showPw ? 'text' : 'password'"
-      [(ngModel)]="password"
-      name="password"
-      required
-    />
+    <input type="password" [(ngModel)]="password" name="password" minlength="8" required />
 
-    <label class="checkbox">
-      <input type="checkbox" [(ngModel)]="showPw" name="showPw" />
-      Show password
-    </label>
-
-    <button class="btn" type="submit" [disabled]="loading">
-      {{ loading ? 'Saving…' : 'Save' }}
-    </button>
-
-    <p class="notice" *ngIf="msg">{{ msg }}</p>
+    <button class="btn" type="submit" [disabled]="loading">{{ loading ? 'Saving...' : 'Save' }}</button>
   </form>
+
+  <p id="msg" class="muted">{{ msg }}</p>
 </main>

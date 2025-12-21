@@ -1,49 +1,37 @@
 <nav class="nav">
   <div class="brand">MySite</div>
   <div class="links">
-    <a routerLink="/home" class="active">Home</a>
+    <a routerLink="/home">Home</a>
     <button id="themeToggle" (click)="toggleTheme()">🌓</button>
-
-    <div id="userMenu" class="user-menu">
-      <img id="avatar" [src]="avatarUrl" alt="avatar" />
-      <span id="uname">{{ username }}</span>
-      <div class="dropdown">
-        <a routerLink="/settings">Settings</a>
-        <button id="logoutBtn" class="linklike" (click)="logout()">
-          Logout
-        </button>
-      </div>
-    </div>
   </div>
 </nav>
 
-<main class="container small">
-  <h1>Settings</h1>
+<main class="container">
+  <h2>Settings</h2>
 
-  <div class="center">
-    <img id="avatarLarge" [src]="avatarUrl" alt="avatar large" class="avatar-large" />
-  </div>
-
-  <div class="card">
-    <h2>Update Username</h2>
+  <form id="settingsForm" (ngSubmit)="save()">
     <label>Username</label>
-    <input type="text" [(ngModel)]="newUsername" />
-    <button class="btn" (click)="saveUsername()" [disabled]="busy">
-      Save
-    </button>
-  </div>
+    <input type="text" id="username" [(ngModel)]="username" name="username" />
+    <button class="btn" type="submit" [disabled]="loadingSave">{{ loadingSave ? 'Saving...' : 'Save' }}</button>
+  </form>
 
-  <div class="card">
-    <h2>Update Profile Picture</h2>
-    <input id="avatarInput" type="file" accept="image/*" (change)="onAvatarSelected($event)" />
-  </div>
+  <div style="height:1rem"></div>
 
-  <div class="card danger">
-    <h2>Delete Account</h2>
-    <button class="btn danger" id="deleteBtn" (click)="deleteAccount()" [disabled]="busy">
-      Delete Account
-    </button>
-  </div>
+  <form id="avatarForm" (ngSubmit)="uploadAvatar()">
+    <label>Upload new profile picture</label>
+    <input
+      type="file"
+      id="avatarFile"
+      accept="image/png,image/jpeg,image/jpg,image/gif,image/webp"
+      (change)="onFile($event)"
+    />
+    <button class="btn" type="submit" [disabled]="loadingUpload">{{ loadingUpload ? 'Uploading...' : 'Upload' }}</button>
+  </form>
 
-  <p class="notice" *ngIf="msg">{{ msg }}</p>
+  <hr />
+  <button id="deleteBtn" class="btn danger" (click)="deleteAccount()" [disabled]="loadingDelete">
+    {{ loadingDelete ? 'Deleting...' : 'Delete my account' }}
+  </button>
+
+  <p id="msg" class="muted">{{ msg }}</p>
 </main>

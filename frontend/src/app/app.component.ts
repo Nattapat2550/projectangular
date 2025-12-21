@@ -1,65 +1,54 @@
-// frontend/src/app/app.component.ts
-import { Component, AfterViewInit, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 
-function parseHashParams(hash: string): Record<string, string> {
-  const out: Record<string, string> = {};
-  const h = (hash || '').replace(/^#/, '');
-  if (!h) return out;
-
-  for (const part of h.split('&')) {
-    const [k, v] = part.split('=');
-    if (!k) continue;
-    out[decodeURIComponent(k)] = decodeURIComponent(v || '');
-  }
-  return out;
-}
-
+/**
+ * Root app shell:
+ * - Applies stored theme on load
+ * - Captures #token=... from OAuth redirect (same as docker frontend)
+ * - Handles user-menu dropdown toggle-close behavior (same as docker frontend)
+ */
 @Component({
-  selector: 'app-root',
   standalone: true,
+  selector: 'app-root',
   imports: [RouterOutlet],
-  template: `
-    <router-outlet></router-outlet>
-  `,
-  styleUrl: './app.component.css',
+  templateUrl: './app.component.html',
 })
-export class AppComponent implements OnInit, AfterViewInit {
+export class AppComponent implements OnInit {
   ngOnInit(): void {
-    // ✅ Theme persistence (same behavior as docker frontend)
-    const theme = localStorage.getItem('theme');
-    if (theme === 'dark') document.body.classList.add('dark');
+    this.applyStoredTheme();
+    this.captureTokenFromHash();
+  }
 
-    // ✅ Token-in-hash fallback (used by some OAuth redirects / mobile)
-    // Example: #token=...&role=admin
-    const params = parseHashParams(window.location.hash);
-    if (params['token']) {
-      localStorage.setItem('auth_token', params['token']);
-      if (params['role']) localStorage.setItem('auth_role', params['role']);
+  // Close user menu when clicking outside (docker behavior)
+  @HostListener('document:click', ['$event'])
+  onDocClick(e: MouseEvent) {
+    const menu = document.getElementById('userMenu');
+    if (!menu) return;
 
-      // Remove token from URL for safety
-      history.replaceState(null, '', window.location.pathname + window.location.search);
+    const target = e.target as any;
+    if (menu.contains(target)) {
+      menu.classList.toggle('open');
+    } else {
+      menu.classList.remove('open');
     }
   }
 
-  ngAfterViewInit(): void {
-    // close dropdown when clicking outside
-    document.addEventListener('click', (event) => {
-      const menu = document.getElementById('userMenu');
-      if (!menu) return;
+  private captureTokenFromHash() {
+    const hash = window.location.hash || '';
+    if (!hash.startsWith('#')) return;
 
-      const target = event.target as Node | null;
-      if (!target) return;
+    const params = new URLSearchParams(hash.slice(1));
+    const token = params.get('token');
 
-      const inside = menu.contains(target);
+    if (token) {
+      localStorage.setItem('token', token);
+      // remove hash to keep URL clean
+      window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
+    }
+  }
 
-      if (inside) {
-        // click inside → toggle open
-        menu.classList.toggle('open');
-      } else {
-        // click outside → close
-        menu.classList.remove('open');
-      }
-    });
+  private applyStoredTheme() {
+    const theme = localStorage.getItem('theme');
+    if (theme === 'dark') document.body.classList.add('dark');
   }
 }

@@ -1,15 +1,15 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { RouterLink, Router } from '@angular/router';
-import { ApiService } from '../../services/api.service';
+import { Router, RouterLink } from '@angular/router';
 import { NgForOf, NgIf } from '@angular/common';
+import { ApiService } from '../../services/api.service';
 
 interface CarouselItem {
   id: number;
   item_index: number;
-  title: string;
-  subtitle: string;
-  description: string;
   image_dataurl: string;
+  title?: string;
+  subtitle?: string;
+  description?: string;
 }
 
 @Component({
@@ -19,36 +19,33 @@ interface CarouselItem {
   templateUrl: './home.component.html',
 })
 export class HomeComponent implements OnInit, OnDestroy {
-  username = '...';
+  username = 'User';
   avatarUrl = 'assets/user.png';
-  msg = '';
-
-  carouselItems: CarouselItem[] = [];
-  currentIndex = 0;
+  isAdmin = false;
 
   welcomeHeader = '';
   mainParagraph = '';
 
-  private autoTimer: any = null;
+  carouselItems: CarouselItem[] = [];
+  currentIndex = 0;
+
+  private timer: any = null;
+  private paused = false;
 
   constructor(private api: ApiService, private router: Router) {}
 
-  async ngOnInit() {
+  get currentItem(): CarouselItem | null {
+    if (!this.carouselItems.length) return null;
+    return this.carouselItems[this.currentIndex] || this.carouselItems[0] || null;
+  }
+
+  ngOnInit(): void {
     this.applyStoredTheme();
-
-    await this.loadMe();
-    await this.loadHomepage();
-    await this.loadCarousel();
-
-    this.startAuto();
+    this.load().catch(() => {});
   }
 
   ngOnDestroy(): void {
     this.stopAuto();
-  }
-
-  get isAdmin(): boolean {
-    return (localStorage.getItem('auth_role') || '').toLowerCase() === 'admin';
   }
 
   toggleTheme() {
@@ -62,60 +59,45 @@ export class HomeComponent implements OnInit, OnDestroy {
   async logout() {
     try {
       await this.api.request('/api/auth/logout', { method: 'POST' });
-    } finally {
-      // also clear fallback token
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('auth_role');
-      this.router.navigate(['/']);
+    } catch {
+      // ignore
     }
+    localStorage.removeItem('token');
+    this.router.navigate(['/']);
   }
 
-  async loadMe() {
-    try {
-      const me = await this.api.request<any>('/api/auth/me');
-      const uname = me.username || me.email || 'User';
-      this.username = uname;
-      this.avatarUrl = me.profile_picture_url || 'assets/user.png';
-      localStorage.setItem('auth_role', me.role || 'user');
-    } catch (e: any) {
-      this.msg = e.message || 'Please login';
-      this.router.navigate(['/']);
-    }
-  }
+  async load() {
+    // user profile (docker uses /api/users/me)
+    const me: any = await this.api.request('/api/users/me', { method: 'GET' });
+    this.username = me.username || me.email || 'User';
+    this.avatarUrl = me.profile_picture_url || 'assets/user.png';
+    this.isAdmin = String(me.role || '').toLowerCase() === 'admin';
 
-  async loadHomepage() {
-    try {
-      const sections = await this.api.request<
-        { section_key: string; section_value: string }[]
-      >('/api/homepage');
+    // homepage content
+    const hp: any = await this.api.request('/api/homepage', { method: 'GET' });
+    this.welcomeHeader = hp?.welcome_header || 'Welcome';
+    this.mainParagraph =
+      hp?.main_paragraph || 'This is your personalized home page.';
 
-      const map = new Map(sections.map((s) => [s.section_key, s.section_value]));
-      this.welcomeHeader = map.get('welcome_header') || 'Welcome!';
-      this.mainParagraph = map.get('main_paragraph') || '';
-    } catch (e: any) {
-      this.msg = e.message || 'Failed to load homepage';
-    }
-  }
+    // carousel
+    const items: any[] = await this.api.request('/api/carousel', { method: 'GET' });
+    this.carouselItems = (items || [])
+      .slice()
+      .sort((a, b) => (a.item_index ?? 0) - (b.item_index ?? 0));
 
-  async loadCarousel() {
-    try {
-      const items = await this.api.request<CarouselItem[]>('/api/carousel');
-      this.carouselItems = (items || []).sort((a, b) => a.item_index - b.item_index);
-      this.currentIndex = 0;
-    } catch (e: any) {
-      this.msg = e.message || 'Failed to load carousel';
-    }
+    this.currentIndex = 0;
+    this.startAuto();
   }
 
   prev() {
-    if (!this.carouselItems.length) return;
+    if (this.carouselItems.length <= 1) return;
     this.currentIndex =
       (this.currentIndex - 1 + this.carouselItems.length) %
       this.carouselItems.length;
   }
 
   next() {
-    if (!this.carouselItems.length) return;
+    if (this.carouselItems.length <= 1) return;
     this.currentIndex = (this.currentIndex + 1) % this.carouselItems.length;
   }
 
@@ -125,30 +107,32 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   pauseCarousel() {
-    this.stopAuto();
+    this.paused = true;
   }
 
   resumeCarousel() {
-    this.startAuto();
+    this.paused = false;
   }
 
   private startAuto() {
     this.stopAuto();
     if (this.carouselItems.length <= 1) return;
-    this.autoTimer = setInterval(() => this.next(), 4000);
+
+    this.timer = setInterval(() => {
+      if (this.paused) return;
+      this.next();
+    }, 5000);
   }
 
   private stopAuto() {
-    if (this.autoTimer) {
-      clearInterval(this.autoTimer);
-      this.autoTimer = null;
+    if (this.timer) {
+      clearInterval(this.timer);
+      this.timer = null;
     }
   }
 
   private applyStoredTheme() {
     const theme = localStorage.getItem('theme');
-    if (theme === 'dark') {
-      document.body.classList.add('dark');
-    }
+    if (theme === 'dark') document.body.classList.add('dark');
   }
 }
