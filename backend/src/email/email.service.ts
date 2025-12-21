@@ -2,10 +2,7 @@ import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config';
 import { google } from 'googleapis';
 
-// MailComposer (nodemailer) ใช้สร้าง MIME email ให้ Gmail API ส่งได้
 // ต้องมี dependency: nodemailer
-// npm i nodemailer
-// (ถ้ามีอยู่แล้วไม่ต้องลงเพิ่ม)
 const MailComposer = require('nodemailer/lib/mail-composer');
 
 type SendEmailInput = {
@@ -13,8 +10,6 @@ type SendEmailInput = {
   subject: string;
   text?: string;
   html?: string;
-
-  // optional
   cc?: string;
   bcc?: string;
   replyTo?: string;
@@ -37,14 +32,10 @@ export class EmailService {
     const refreshToken = (this.config.get<string>('REFRESH_TOKEN') || '').trim();
 
     this.senderName = (this.config.get<string>('SENDER_NAME') || 'MyApp').trim();
-
-    // ✅ สาเหตุหลักที่ Outlook ไม่รับ: From ว่าง/ผิด หรือ From ไม่ตรง Gmail ที่ authorize
-    // ถ้ามี SENDER_EMAIL ใช้ตัวนี้ (ต้องเป็น Gmail เดียวกับ refresh token)
     const senderEnv = (this.config.get<string>('SENDER_EMAIL') || '').trim();
     this.senderEmail = senderEnv || null;
 
     if (!clientId || !clientSecret || !redirectUri || !refreshToken) {
-      // ไม่ throw ทันที เพราะบางคนอาจไม่ได้ใช้ email ทุก flow
       this.logger.error(
         '[MAIL] Missing Gmail OAuth env. Please set GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI, REFRESH_TOKEN',
       );
@@ -57,17 +48,11 @@ export class EmailService {
     this.gmail = google.gmail({ version: 'v1', auth: this.oauth2Client });
   }
 
-  /**
-   * ดึงอีเมลของบัญชี Gmail ที่ authorize จริง เพื่อใช้เป็น fallback From
-   * ช่วยให้ Outlook deliver ดีขึ้นมาก เพราะ From ไม่ spoof
-   */
   private async ensureSenderEmail(): Promise<string> {
     if (this.senderEmail) return this.senderEmail;
 
     if (!this.gmail) {
-      throw new ServiceUnavailableException(
-        'Email service is not configured (missing Gmail OAuth env).',
-      );
+      throw new ServiceUnavailableException('Email service is not configured.');
     }
 
     try {
@@ -76,47 +61,34 @@ export class EmailService {
       if (!email) throw new Error('Missing emailAddress from Gmail profile');
 
       this.senderEmail = String(email).trim();
-      this.logger.log(`[MAIL] Using Gmail profile sender: ${this.senderEmail}`);
       return this.senderEmail;
     } catch (err: any) {
-      this.logger.error(
-        `[MAIL] Failed to read Gmail profile for sender fallback: ${err?.message || err}`,
-      );
-      throw new ServiceUnavailableException(
-        'Email sender is not available. Please set SENDER_EMAIL to the Gmail address used to create REFRESH_TOKEN.',
-      );
+      this.logger.error(`[MAIL] Fallback failed: ${err?.message}`);
+      throw new ServiceUnavailableException('Email sender is not available.');
     }
   }
 
-  /**
-   * สร้าง raw RFC822 email -> base64url สำหรับ Gmail API
-   */
   private async buildRawMessage(input: SendEmailInput): Promise<string> {
     const fromEmail = await this.ensureSenderEmail();
-    const fromName = (this.senderName || 'MyApp').trim();
+    const fromName = this.senderName;
 
-    // ✅ ช่วย deliver โดยเฉพาะ Outlook:
-    // - มีทั้ง text และ html
-    // - From เป็นบัญชีจริง ไม่ spoof
-    const text =
-      input.text ||
-      (input.html
-        ? input.html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
-        : '');
+    // ปรับปรุง: ตรวจสอบและสร้าง Text fallback ให้สมบูรณ์ (Outlook ชอบแบบที่มีทั้ง Text และ HTML)
+    const textContent = input.text || (input.html ? input.html.replace(/<[^>]+>/g, ' ') : '');
 
-    const mail = new MailComposer({
+    const mailOptions: any = {
+      // ปรับปรุง: ใช้รูปแบบ From ที่ Outlook ยอมรับง่ายขึ้น และต้องตรงกับเจ้าของ Token
       from: `${fromName} <${fromEmail}>`,
       to: input.to,
-      cc: input.cc,
-      bcc: input.bcc,
-      replyTo: input.replyTo || fromEmail,
       subject: input.subject,
-      text,
-      html: input.html || (text ? `<p>${this.escapeHtml(text)}</p>` : undefined),
-      headers: {
-        'X-Mailer': 'projectangular1-nest',
-      },
-    });
+      text: textContent,
+      html: input.html,
+    };
+
+    if (input.cc) mailOptions.cc = input.cc;
+    if (input.bcc) mailOptions.bcc = input.bcc;
+    if (input.replyTo) mailOptions.replyTo = input.replyTo;
+
+    const mail = new MailComposer(mailOptions);
 
     const message: Buffer = await new Promise((resolve, reject) => {
       mail.compile().build((err: any, msg: Buffer) => {
@@ -125,7 +97,6 @@ export class EmailService {
       });
     });
 
-    // Gmail API wants base64url
     return message
       .toString('base64')
       .replace(/\+/g, '-')
@@ -133,28 +104,16 @@ export class EmailService {
       .replace(/=+$/g, '');
   }
 
-  private escapeHtml(s: string) {
-    return s
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-  }
-
-  /**
-   * ส่งอีเมลด้วย Gmail API
-   * คืน messageId เพื่อ debug ได้ง่ายว่ามัน “ส่งออกจาก Gmail แล้ว”
-   */
   async sendEmail(input: SendEmailInput): Promise<{ id: string }> {
-    if (!this.gmail) {
-      throw new ServiceUnavailableException(
-        'Email service is not configured (missing Gmail OAuth env).',
-      );
+    // ปรับปรุง: เพิ่มการเช็คตัวแปร EMAIL_DISABLE จาก Config
+    const isEmailDisabled = this.config.get<boolean>('EMAIL_DISABLE');
+    if (isEmailDisabled) {
+      this.logger.warn(`[MAIL] Email sending is disabled via EMAIL_DISABLE env.`);
+      return { id: 'disabled' };
     }
 
-    if (!input?.to || !input?.subject) {
-      throw new ServiceUnavailableException('Email payload missing "to" or "subject".');
+    if (!this.gmail) {
+      throw new ServiceUnavailableException('Email service not configured.');
     }
 
     try {
@@ -166,19 +125,13 @@ export class EmailService {
       });
 
       const id = String(res?.data?.id || '');
-      this.logger.log(
-        `[MAIL] Sent: to=${input.to} subject="${input.subject}" id=${id || '(no-id)'}`,
-      );
+      this.logger.log(`[MAIL] Sent successfully: ${input.to}, ID: ${id}`);
 
       return { id };
     } catch (err: any) {
       const msg = err?.response?.data || err?.message || String(err);
-      this.logger.error(`[MAIL] Send failed: ${msg}`);
-
-      // ให้ error ชัด ๆ เพื่อแก้เร็ว
-      throw new ServiceUnavailableException(
-        'Unable to send email right now. Please verify Gmail OAuth env and SENDER_EMAIL, then try again.',
-      );
+      this.logger.error(`[MAIL] Send failed: ${JSON.stringify(msg)}`);
+      throw new ServiceUnavailableException('Failed to send email via Gmail API.');
     }
   }
 }
