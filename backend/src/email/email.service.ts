@@ -3,8 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { google, gmail_v1 } from 'googleapis';
 import { randomUUID } from 'crypto';
 
-// ใช้ MailComposer เพื่อให้ได้ raw RFC822 ที่ Outlook/Hotmail รับได้ดี
-// (แนวเดียวกับ docker/backend/utils/gmail.js)
+// ใช้ MailComposer แบบเดียวกับ docker
 const MailComposer = require('nodemailer/lib/mail-composer');
 
 @Injectable()
@@ -20,9 +19,7 @@ export class EmailService {
     const refreshToken = (this.config.get<string>('REFRESH_TOKEN') || '').trim();
 
     if (!clientId || !clientSecret || !redirectUri || !refreshToken) {
-      this.logger.error(
-        '[MAIL] Missing OAuth config: GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET/GOOGLE_REDIRECT_URI/REFRESH_TOKEN',
-      );
+      this.logger.error('[MAIL] Missing OAuth Config in .env (GOOGLE_CLIENT_ID/SECRET/REDIRECT_URI/REFRESH_TOKEN)');
       return;
     }
 
@@ -41,16 +38,12 @@ export class EmailService {
       return fromEnv;
     }
 
-    if (!this.gmail) {
-      throw new Error('Gmail service is not initialized');
-    }
+    if (!this.gmail) throw new Error('Gmail service is not initialized');
 
+    // fallback: ดึง email เจ้าของ refresh token
     const profile = await this.gmail.users.getProfile({ userId: 'me' });
     const addr = (profile.data.emailAddress || '').trim();
-
-    if (!addr) {
-      throw new Error('Unable to resolve sender email. Please set SENDER_EMAIL in env.');
-    }
+    if (!addr) throw new Error('Unable to resolve sender email. Please set SENDER_EMAIL in env.');
 
     this.resolvedSender = addr;
     return addr;
@@ -58,26 +51,21 @@ export class EmailService {
 
   async sendEmail(input: { to: string; subject: string; text: string }) {
     try {
-      // ✅ ถ้า disable ให้ล้มชัดเจน (ไม่ให้ API ตอบ ok แต่ไม่ส่งเมล)
-      if (this.config.get<boolean>('EMAIL_DISABLE') === true) {
+      // ✅ ถ้า disable: ต้อง error ชัด (ไม่ return เงียบ ๆ)
+      const disabled = this.config.get<boolean>('EMAIL_DISABLE') === true;
+      if (disabled) {
         throw new ServiceUnavailableException('Email sending is disabled (EMAIL_DISABLE=true).');
       }
 
-      if (!this.gmail) {
-        throw new Error('Gmail service is not initialized');
-      }
+      if (!this.gmail) throw new Error('Gmail service is not initialized');
 
       const to = (input?.to || '').trim();
       const subject = (input?.subject || '').trim();
       const text = (input?.text || '').trim();
-
-      if (!to || !subject || !text) {
-        throw new Error('sendEmail requires (to, subject, text)');
-      }
+      if (!to || !subject || !text) throw new Error('sendEmail requires (to, subject, text)');
 
       const sender = await this.getSenderEmail();
 
-      // ใส่ ref id ช่วย trace + กัน header ซ้ำ ๆ
       const refId = (() => {
         try {
           return randomUUID();
@@ -90,7 +78,7 @@ export class EmailService {
         to,
         subject,
         text,
-        from: sender, // ต้องตรงกับเจ้าของ Refresh Token เพื่อให้ Outlook ไม่ drop
+        from: sender,
         replyTo: sender,
         headers: {
           'X-Entity-Ref-ID': refId,
@@ -102,7 +90,6 @@ export class EmailService {
         mail.compile().build((err: any, msg: Buffer) => (err ? reject(err) : resolve(msg)));
       });
 
-      // Base64URL ตาม Gmail API
       const encoded = Buffer.from(message)
         .toString('base64')
         .replace(/\+/g, '-')
@@ -118,14 +105,10 @@ export class EmailService {
       return res.data;
     } catch (error: any) {
       const msg = error?.message || String(error);
-
-      if (error instanceof ServiceUnavailableException) {
-        this.logger.warn(`[MAIL] ${msg}`);
-        throw error;
-      }
-
       this.logger.error(`[MAIL] Failed to send email: ${msg}`);
-      throw new ServiceUnavailableException(`Email failed: ${msg}`);
+      throw error instanceof ServiceUnavailableException
+        ? error
+        : new ServiceUnavailableException(`Email failed: ${msg}`);
     }
   }
 }
