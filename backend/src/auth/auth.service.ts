@@ -75,7 +75,6 @@ export class AuthService {
       text: `Your verification code is: ${code}\n\nThis code expires in 10 minutes.\n\nIf you didn't request this, you can ignore this email.`,
     });
 
-
     return { ok: true };
   }
 
@@ -145,7 +144,6 @@ export class AuthService {
       text: `Reset your password using this link (valid 30 minutes):\n\n${resetLink}\n\nIf you didn't request this, you can ignore this email.`,
     });
 
-
     return { ok: true };
   }
 
@@ -193,7 +191,8 @@ export class AuthService {
       auth: this.oauth2ClientWeb,
       version: 'v2',
     });
-    const { data: info } = await oauth2.userinfo.v2.me.get();
+    // เปลี่ยนจาก v2.me.get() เป็น .get() ตรงๆ เพื่อความเสถียรข้ามโปรเจค
+    const { data: info } = await oauth2.userinfo.get();
 
     const email = info.email!;
     const user = await this.users.setOAuthUser({

@@ -42,9 +42,7 @@ export class AuthController {
       secure: isProd,
       sameSite: sameSite as 'none' | 'lax',
       path: '/',
-      maxAge: remember
-        ? 1000 * 60 * 60 * 24 * 30
-        : 1000 * 60 * 60 * 24,
+      maxAge: remember ? 1000 * 60 * 60 * 24 * 30 : 1000 * 60 * 60 * 24,
     };
   }
 
@@ -65,17 +63,19 @@ export class AuthController {
     });
   }
 
-  // REGISTER
+  // ------ REGISTER ------
   @Post('register')
   async register(@Body('email') email: string) {
     return this.auth.register(email);
   }
 
+  // ------ VERIFY CODE ------
   @Post('verify-code')
   async verifyCode(@Body('email') email: string, @Body('code') code: string) {
     return this.auth.verifyCode(email, code);
   }
 
+  // ------ COMPLETE PROFILE ------
   @Post('complete-profile')
   async completeProfile(
     @Body('email') email: string,
@@ -87,10 +87,22 @@ export class AuthController {
     const token = this.auth.signToken(user);
     this.setAuthCookie(res, token, true);
 
-    return res.json({ ok: true, role: user.role });
+    // แก้ไข: คืนค่า User Payload ให้เหมือน Docker (React/Vanilla)
+    return res.json({
+      ok: true,
+      token,
+      role: user.role,
+      user: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        role: user.role,
+        profile_picture_url: user.profile_picture_url,
+      },
+    });
   }
 
-  // LOGIN
+  // ------ LOGIN ------
   @Post('login')
   async login(
     @Body('email') email: string,
@@ -102,11 +114,17 @@ export class AuthController {
     const token = this.auth.signToken(user);
     this.setAuthCookie(res, token, !!remember);
 
-    // (Optional) token fallback (frontend stores in localStorage when cookies are blocked)
+    // แก้ไข: คืนค่า User Payload ให้ครบเหมือน Docker (React/Vanilla)
     return res.json({
-      ok: true,
       role: user.role,
       token,
+      user: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        role: user.role,
+        profile_picture_url: user.profile_picture_url,
+      },
     });
   }
 
@@ -116,7 +134,7 @@ export class AuthController {
     return res.json({ ok: true });
   }
 
-  // FORGOT / RESET PASSWORD
+  // ------ FORGOT / RESET PASSWORD ------
   @Post('forgot-password')
   async forgotPassword(@Body('email') email: string) {
     return this.auth.forgotPassword(email);
@@ -130,7 +148,7 @@ export class AuthController {
     return this.auth.resetPassword(token, newPassword);
   }
 
-  // GOOGLE WEB FLOW
+  // ------ GOOGLE WEB FLOW ------
   @Get('google')
   async google(@Res() res: Response) {
     const url = this.auth.getGoogleAuthUrl();
@@ -159,14 +177,13 @@ export class AuthController {
       }
       return res.redirect(`${fe}/home${hash}`);
     } catch (e) {
-      // eslint-disable-next-line no-console
       console.error('google callback error', e);
       const fe = process.env.FRONTEND_URL || '';
       return res.redirect(`${fe}/login?error=oauth_failed`);
     }
   }
 
-  // STATUS
+  // ------ STATUS ------
   @Get('status')
   async status(@Req() req: Request) {
     const token =
@@ -174,7 +191,7 @@ export class AuthController {
     return this.auth.statusFromToken(token);
   }
 
-  // ME
+  // ------ ME ------
   @UseGuards(JwtAuthGuard)
   @Get('me')
   async me(@CurrentUser() user: any) {
