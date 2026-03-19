@@ -1,0 +1,36 @@
+name: NestJS Automated Tests
+
+# ตั้งค่าให้รันสคริปต์นี้ทุกครั้งที่มีการ Push โค้ดไปยังกิ่ง main หรือ pull request
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    # เข้าไปรันในโฟลเดอร์ backend
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+    # 1. โคลนซอร์สโค้ดจาก GitHub มาไว้ในเครื่องเซิร์ฟเวอร์จำลอง
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+
+    # 2. ติดตั้ง Node.js
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18.x' # ใช้ Node 18 หรือเปลี่ยนตามเวอร์ชันที่คุณใช้
+
+    # 3. ติดตั้ง Dependencies (npm install)
+    - name: Install Dependencies
+      run: npm install
+
+    # 4. รันเทส E2E (ใช้คำสั่งของ NestJS)
+    - name: Run E2E Tests
+      run: npm run test:e2e
