@@ -9,7 +9,7 @@ import { UsersService } from '../users/users.service';
 import { EmailService } from '../email/email.service';
 import * as jwt from 'jsonwebtoken';
 import { google } from 'googleapis';
-import { v4 as uuidv4 } from 'uuid';
+const { v4: uuidv4 } = require('uuid');
 
 @Injectable()
 export class AuthService {

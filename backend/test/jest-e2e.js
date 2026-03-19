@@ -6,8 +6,12 @@ module.exports = {
   transform: {
     "^.+\\.(t|j)s$": "ts-jest"
   },
-  // บรรทัดนี้คือพระเอก! บังคับให้ Jest ใช้ uuid ในโหมด CommonJS
+  // ปล่อยให้ uuid โหลดตามปกติ
   moduleNameMapper: {
     "^uuid$": require.resolve("uuid")
-  }
+  },
+  // ท่าไม้ตาย! สั่งให้ Jest แปลงไฟล์ข้างใน node_modules ที่เป็นของ uuid ด้วย
+  transformIgnorePatterns: [
+    "node_modules/(?!(uuid)/)"
+  ]
 };
