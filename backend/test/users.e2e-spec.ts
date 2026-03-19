@@ -5,7 +5,7 @@ process.env.GOOGLE_REDIRECT_URI = 'http://localhost';
 process.env.GOOGLE_REFRESH_TOKEN = 'mock-token';
 
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, UnauthorizedException } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { UsersService } from './../src/users/users.service';
@@ -20,10 +20,14 @@ describe('👤 Users Profile (e2e)', () => {
       imports: [AppModule],
     })
     // จำลอง Guard ให้ตรวจผ่านทันทีถ้าแนบ Token ปลอมๆ มา
+    // จำลอง Guard ให้ตรวจผ่านทันทีถ้าแนบ Token ปลอมๆ มา
     .overrideGuard(JwtAuthGuard).useValue({
       canActivate: (context: any) => {
         const req = context.switchToHttp().getRequest();
-        if (!req.headers.authorization) return false; // ถ้าไม่มี token ให้ตก 401
+        // ถ้าไม่มี token ให้โยน 401 ออกไปแทนการ return false
+        if (!req.headers.authorization) {
+          throw new UnauthorizedException(); 
+        }
         req.user = { id: 1, email: 'test@example.com' };
         return true;
       }
