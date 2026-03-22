@@ -21,18 +21,27 @@ test.describe('Admin Route Access', () => {
       status: 200, json: { id: 1, email: 'admin@example.com', role: 'admin' }
     }));
     
-    // 🛠️ แก้ไข: Angular เช็คค่าตัวแปร authenticated เราเลยต้องส่งกลับเป็น true
     await page.route('**/auth/status', route => route.fulfill({
       status: 200, json: { authenticated: true, role: 'admin' }
     }));
 
     await page.route('**/admin/users', route => route.fulfill({
-      status: 200, json: [{ id: 1, email: 'admin@example.com', role: 'admin' }]
+      status: 200, json: [{ id: 1, email: 'admin@example.com', role: 'admin', username: 'SuperAdmin' }]
+    }));
+
+    // Mock Carousel กันเหนียว (ไม่ให้ API ติด pending)
+    await page.route('**/admin/carousel', route => route.fulfill({
+      status: 200, json: []
     }));
 
     await page.goto('http://localhost:4200/admin');
     
     await expect(page).toHaveURL(/.*\/admin/);
-    await expect(page.getByText('admin@example.com').first()).toBeVisible();
+    
+    // 🛠️ แก้ไข: หาตารางแถวแรก แล้วดึง <input> ตัวที่ 2 (index 1) ซึ่งก็คือช่อง Email
+    const emailInput = page.locator('table#usersTable tbody tr').first().locator('input').nth(1);
+    
+    // ใช้ .toHaveValue() สำหรับเช็คข้อความใน <input>
+    await expect(emailInput).toHaveValue('admin@example.com');
   });
 });
