@@ -17,15 +17,15 @@ test.describe('Admin Route Access', () => {
       localStorage.setItem('role', 'admin');
     });
 
-    // แก้ไข: ต้อง Mock ข้อมูลการเช็คสิทธิ์ (Auth Guard) ที่ Angular อาจจะยิงตอนโหลดหน้า
     await page.route('**/auth/me', route => route.fulfill({
       status: 200, json: { id: 1, email: 'admin@example.com', role: 'admin' }
     }));
+    
+    // 🛠️ แก้ไข: Angular เช็คค่าตัวแปร authenticated เราเลยต้องส่งกลับเป็น true
     await page.route('**/auth/status', route => route.fulfill({
-      status: 200, json: { valid: true, role: 'admin' }
+      status: 200, json: { authenticated: true, role: 'admin' }
     }));
 
-    // Mock API สำหรับตาราง Admin
     await page.route('**/admin/users', route => route.fulfill({
       status: 200, json: [{ id: 1, email: 'admin@example.com', role: 'admin' }]
     }));
