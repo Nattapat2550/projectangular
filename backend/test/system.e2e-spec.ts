@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from './../src/app.module';
+import { CarouselService } from './../src/carousel/carousel.service';
 
 describe('🌐 System & Guest Features (e2e)', () => {
   let app: INestApplication;

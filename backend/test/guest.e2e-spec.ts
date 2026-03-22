@@ -46,9 +46,13 @@ describe('🌍 Guest & Security Features (e2e)', () => {
     expect(res.status).toBe(200);
     expect(res.body.ok).toBe(true);
     
-    // ตรวจสอบว่ามีการส่ง Set-Cookie เพื่อเคลียร์ token (Max-Age=0 หรือค่าว่าง)
-    const cookies = res.headers['set-cookie'] || [];
-    const hasClearCookie = cookies.some((c: string) => c.includes('token=;') || c.includes('Max-Age=0') || c.includes('Expires=Thu, 01 Jan 1970'));
+    // แก้ไข: ดักจับกรณีที่ Set-Cookie ไม่ได้เป็น Array
+    const rawCookies = res.headers['set-cookie'];
+    const cookies = Array.isArray(rawCookies) ? rawCookies : (rawCookies ? [rawCookies] : []);
+    
+    const hasClearCookie = cookies.some((c: string) => 
+      c.includes('token=;') || c.includes('Max-Age=0') || c.includes('Expires=Thu, 01 Jan 1970')
+    );
     expect(hasClearCookie).toBeTruthy();
   });
 });
