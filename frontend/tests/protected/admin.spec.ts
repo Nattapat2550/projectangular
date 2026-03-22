@@ -7,6 +7,13 @@ test.describe('Admin Route Access', () => {
       localStorage.setItem('role', 'user');
     });
 
+    await page.route('**/api/auth/status', route => route.fulfill({
+      status: 200, json: { authenticated: true, role: 'user' }
+    }));
+    await page.route('**/api/users/me', route => route.fulfill({
+      status: 200, json: { id: 2, email: 'user@example.com', role: 'user' }
+    }));
+
     await page.goto('http://localhost:4200/admin');
     await expect(page).not.toHaveURL(/.*\/admin/);
   });
@@ -17,20 +24,20 @@ test.describe('Admin Route Access', () => {
       localStorage.setItem('role', 'admin');
     });
 
-    await page.route('**/auth/me', route => route.fulfill({
+    // 🛠️ แก้ไข: เปลี่ยนเป็น **/api/users/me ให้ตรงกับที่โค้ดเรียกใช้เป๊ะๆ
+    await page.route('**/api/users/me', route => route.fulfill({
       status: 200, json: { id: 1, email: 'admin@example.com', role: 'admin' }
     }));
     
-    await page.route('**/auth/status', route => route.fulfill({
+    await page.route('**/api/auth/status', route => route.fulfill({
       status: 200, json: { authenticated: true, role: 'admin' }
     }));
 
-    await page.route('**/admin/users', route => route.fulfill({
+    await page.route('**/api/admin/users', route => route.fulfill({
       status: 200, json: [{ id: 1, email: 'admin@example.com', role: 'admin', username: 'SuperAdmin' }]
     }));
 
-    // Mock Carousel กันเหนียว (ไม่ให้ API ติด pending)
-    await page.route('**/admin/carousel', route => route.fulfill({
+    await page.route('**/api/admin/carousel', route => route.fulfill({
       status: 200, json: []
     }));
 
@@ -38,10 +45,12 @@ test.describe('Admin Route Access', () => {
     
     await expect(page).toHaveURL(/.*\/admin/);
     
-    // 🛠️ แก้ไข: หาตารางแถวแรก แล้วดึง <input> ตัวที่ 2 (index 1) ซึ่งก็คือช่อง Email
-    const emailInput = page.locator('table#usersTable tbody tr').first().locator('input').nth(1);
+    // รอให้ตารางแถวแรกปรากฏขึ้นมาก่อน (กันการเช็คค่าก่อนที่ตารางจะเรนเดอร์เสร็จ)
+    const row = page.locator('table#usersTable tbody tr').first();
+    await expect(row).toBeVisible({ timeout: 5000 });
     
-    // ใช้ .toHaveValue() สำหรับเช็คข้อความใน <input>
+    // ดึง <input> ช่องอีเมล (index 1) แล้วตรวจเช็คค่า
+    const emailInput = row.locator('input').nth(1);
     await expect(emailInput).toHaveValue('admin@example.com');
   });
 });
