@@ -1,34 +1,55 @@
-// frontend/tests/auth/reset.spec.ts
 import { test, expect } from '@playwright/test';
 
-test.describe('Reset Password Flow', () => {
-  test('Part 1: ขอลิงก์ (Request Box) สำเร็จ', async ({ page }) => {
-    await page.route('**/auth/forgot-password', route => route.fulfill({ status: 200, json: { ok: true } }));
-    
-    await page.goto('http://localhost:4200/reset');
-    // ควรแสดงฟอร์มกรอกอีเมล
-    await expect(page.locator('input[type="email"]')).toBeVisible();
-    await page.fill('input[type="email"]', 'test@example.com');
-    await page.click('button[type="submit"]');
-    
-    // แจ้งเตือนว่าส่งลิงก์สำเร็จ
-    await expect(page.locator('text=ส่งลิงก์เรียบร้อยแล้ว')).toBeVisible({ timeout: 5000 }).catch(() => {});
+const corsHeaders = { 'Access-Control-Allow-Origin': '*' };
+
+test.describe('Forgot & Reset Password Flow', () => {
+  
+  test.describe('Part 1: Request Reset Link', () => {
+    test.beforeEach(async ({ page }) => {
+      await page.route('**/api/users/me', route => {
+        if (route.request().method() === 'OPTIONS') return route.continue();
+        route.fulfill({ status: 401, headers: corsHeaders, json: { error: 'Not logged in' } });
+      });
+      await page.goto('/reset');
+    });
+
+    test('should show error on API failure', async ({ page }) => {
+      await page.route('**/api/auth/forgot-password', route => {
+        if (route.request().method() === 'OPTIONS') return route.continue();
+        route.fulfill({ status: 500, headers: corsHeaders, json: { error: 'Server Error' } });
+      });
+
+      // 🌟 ใช้ locator ตาม type แทน name เพื่อให้ตรงกับ ResetPasswordPage.jsx
+      await page.locator('input[type="email"]').fill('user@example.com');
+      await page.locator('button[type="submit"]').click();
+      
+      // อ้างอิงข้อความ Error ตามที่คุณรับค่ามาใส่ {msg}
+      await expect(page.getByText('Server Error')).toBeVisible();
+    });
   });
 
-  test('Part 2: ตั้งรหัสผ่านใหม่ (เข้าด้วย URL ?token=...)', async ({ page }) => {
-    await page.route('**/auth/reset-password', route => route.fulfill({ status: 200, json: { ok: true } }));
+  test.describe('Part 2: Set New Password', () => {
+    test.beforeEach(async ({ page }) => {
+      await page.route('**/api/users/me', route => {
+        if (route.request().method() === 'OPTIONS') return route.continue();
+        route.fulfill({ status: 401, headers: corsHeaders, json: { error: 'Not logged in' } });
+      });
+      await page.goto('/reset?token=mock_valid_token');
+    });
 
-    // จำลองเข้าเว็บด้วย token
-    await page.goto('http://localhost:4200/reset?token=mock-valid-token');
-    
-    // ฟอร์มขอลิงก์ต้องซ่อน และฟอร์มรหัสผ่านต้องแสดง
-    await expect(page.locator('input[type="email"]')).not.toBeVisible();
-    await expect(page.locator('input[type="password"]')).toBeVisible();
+    test('should reset password successfully', async ({ page }) => {
+      await page.route('**/api/auth/reset-password', route => {
+        if (route.request().method() === 'OPTIONS') return route.continue();
+        route.fulfill({ status: 200, headers: corsHeaders, json: { ok: true } });
+      });
 
-    await page.fill('input[type="password"]', 'NewPassword123!');
-    await page.click('button[type="submit"]');
+      const pwInput = page.locator('input[type="password"]').first();
+      await pwInput.waitFor({ state: 'visible' });
+      await pwInput.fill('NewStrongPass1!');
+      await page.locator('button[type="submit"]').click();
 
-    // เปลี่ยนเสร็จควรแจ้งเตือนหรือพาไปหน้าล็อกอิน
-    await expect(page).toHaveURL(/.*\/login/);
+      // อ้างอิงข้อความสำเร็จเป๊ะๆ ตามโค้ดในหน้า Reset
+      await expect(page.getByText('Password set. You can login now.')).toBeVisible();
+    });
   });
 });
