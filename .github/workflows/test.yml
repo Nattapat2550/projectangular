@@ -1,4 +1,4 @@
-name: NestJS Automated Tests
+name: Fullstack Automated Tests
 
 # ตั้งค่าให้รันสคริปต์นี้ทุกครั้งที่มีการ Push โค้ดไปยังกิ่ง main หรือ pull request
 on:
@@ -8,29 +8,68 @@ on:
     branches: [ "main", "master" ]
 
 jobs:
-  build-and-test:
+  # ==========================================
+  # Job 1: ทดสอบฝั่ง Backend (NestJS E2E)
+  # ==========================================
+  backend-tests:
+    name: Backend Tests (NestJS)
     runs-on: ubuntu-latest
-
-    # เข้าไปรันในโฟลเดอร์ backend
+    
+    # กำหนดให้ทุกคำสั่งใน Job นี้ รันในโฟลเดอร์ backend
     defaults:
       run:
         working-directory: ./backend
 
     steps:
-    # 1. โคลนซอร์สโค้ดจาก GitHub มาไว้ในเครื่องเซิร์ฟเวอร์จำลอง
+    # 1. โคลนซอร์สโค้ดจาก GitHub
     - name: Checkout Repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     # 2. ติดตั้ง Node.js
     - name: Setup Node.js
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
-        node-version: '18.x' # ใช้ Node 18 หรือเปลี่ยนตามเวอร์ชันที่คุณใช้
+        node-version: '18.x' # ใช้ Node 18 หรือปรับตามเวอร์ชันโปรเจกต์คุณ
 
-    # 3. ติดตั้ง Dependencies (npm install)
+    # 3. ติดตั้ง Dependencies ฝั่ง Backend
     - name: Install Dependencies
       run: npm install
 
-    # 4. รันเทส E2E (ใช้คำสั่งของ NestJS)
-    - name: Run E2E Tests
+    # 4. รันเทส E2E ของ NestJS
+    - name: Run Backend E2E Tests
       run: npm run test:e2e
+
+  # ==========================================
+  # Job 2: ทดสอบฝั่ง Frontend (Angular & Playwright)
+  # ==========================================
+  frontend-tests:
+    name: Frontend Tests (Playwright)
+    runs-on: ubuntu-latest
+    
+    # กำหนดให้ทุกคำสั่งใน Job นี้ รันในโฟลเดอร์ frontend
+    defaults:
+      run:
+        working-directory: ./frontend
+
+    steps:
+    # 1. โคลนซอร์สโค้ดจาก GitHub
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    # 2. ติดตั้ง Node.js
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18.x'
+
+    # 3. ติดตั้ง Dependencies ฝั่ง Frontend
+    - name: Install Dependencies
+      run: npm install
+
+    # 4. ดาวน์โหลดและติดตั้ง Browser Engine สำหรับ Playwright (Chromium, Firefox, WebKit)
+    - name: Install Playwright Browsers
+      run: npx playwright install --with-deps
+
+    # 5. รันเทส E2E ของ Frontend ด้วย Playwright
+    - name: Run Playwright Tests
+      run: npx playwright test
